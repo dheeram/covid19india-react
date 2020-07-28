@@ -6,7 +6,6 @@ import {TABLE_FADE_IN, TABLE_FADE_OUT} from '../animations';
 import {
   DISTRICT_TABLE_COUNT,
   STATE_NAMES,
-  STATISTICS_CONFIGS,
   TABLE_STATISTICS,
   TABLE_STATISTICS_EXPANDED,
   UNASSIGNED_STATE_CODE,
@@ -81,26 +80,18 @@ function Table({
   const sortingFunction = useCallback(
     (regionKeyA, regionKeyB) => {
       if (sortData.sortColumn !== 'regionName') {
-        const statisticConfig = STATISTICS_CONFIGS[sortData.sortColumn];
-        const statisticOptions = {
-          ...statisticConfig.options,
-          perMillion: isPerMillion,
-        };
-
-        const statisticA =
-          getStatistic(
-            districts?.[regionKeyA] || states[regionKeyA],
-            sortData.delta ? 'delta' : 'total',
-            statisticConfig.key,
-            statisticOptions
-          ) || 0;
-        const statisticB =
-          getStatistic(
-            districts?.[regionKeyB] || states[regionKeyB],
-            sortData.delta ? 'delta' : 'total',
-            statisticConfig.key,
-            statisticOptions
-          ) || 0;
+        const statisticA = getStatistic(
+          districts?.[regionKeyA] || states[regionKeyA],
+          sortData.delta ? 'delta' : 'total',
+          sortData.sortColumn,
+          isPerMillion
+        );
+        const statisticB = getStatistic(
+          districts?.[regionKeyB] || states[regionKeyB],
+          sortData.delta ? 'delta' : 'total',
+          sortData.sortColumn,
+          isPerMillion
+        );
         return sortData.isAscending
           ? statisticA - statisticB
           : statisticB - statisticA;

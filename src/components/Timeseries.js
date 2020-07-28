@@ -1,6 +1,6 @@
 import {
-  COLORS,
   D3_TRANSITION_DURATION,
+  STATISTIC_CONFIGS,
   TIMESERIES_STATISTICS,
 } from '../constants';
 import {useResizeObserver} from '../hooks/useResizeObserver';
@@ -16,7 +16,7 @@ import classnames from 'classnames';
 import {min, max, bisector} from 'd3-array';
 import {axisBottom, axisRight} from 'd3-axis';
 import {interpolatePath} from 'd3-interpolate-path';
-import {scaleTime, scaleLinear, scaleLog} from 'd3-scale';
+import {scaleTime, scaleLinear} from 'd3-scale';
 import {select, mouse} from 'd3-selection';
 import {line, curveMonotoneX} from 'd3-shape';
 // eslint-disable-next-line
@@ -29,7 +29,7 @@ import {useTranslation} from 'react-i18next';
 // Chart margins
 const margin = {top: 15, right: 35, bottom: 25, left: 25};
 
-function Timeseries({timeseries, dates, chartType, isUniform, isLog}) {
+function Timeseries({timeseries, dates, chartType}) {
   const {t} = useTranslation();
   const refs = useRef([]);
 
@@ -97,90 +97,6 @@ function Timeseries({timeseries, dates, chartType, isUniform, isLog}) {
         .attr('class', 'y-axis')
         .call(axisRight(yScale).ticks(4, '0~s').tickPadding(4));
 
-    const uniformScaleMin = min(dates, (date) =>
-      getStatistic(timeseries[date], chartType, 'active')
-    );
-
-    const uniformScaleMax = max(dates, (date) =>
-      Math.max(
-        getStatistic(timeseries[date], chartType, 'confirmed'),
-        getStatistic(timeseries[date], chartType, 'recovered'),
-        getStatistic(timeseries[date], chartType, 'deceased')
-      )
-    );
-
-    const yScaleUniformLinear = scaleLinear()
-      .clamp(true)
-      .domain([uniformScaleMin, Math.max(1, yBufferTop * uniformScaleMax)])
-      .nice(4)
-      .range([chartBottom, margin.top]);
-
-    const yScaleUniformLog = scaleLog()
-      .clamp(true)
-      .domain([
-        Math.max(1, uniformScaleMin),
-        Math.max(10, yBufferTop * uniformScaleMax),
-      ])
-      .nice(4)
-      .range([chartBottom, margin.top]);
-
-    const generateYScale = (statistic) => {
-      if (isUniform && chartType === 'total' && isLog && statistic !== 'tested')
-        return yScaleUniformLog;
-
-      if (isUniform && statistic !== 'tested') return yScaleUniformLinear;
-
-      if (chartType === 'total' && isLog)
-        return scaleLog()
-          .clamp(true)
-          .domain([
-            Math.max(
-              1,
-              min(
-                dates,
-                (date) =>
-                  getStatistic(timeseries[date], chartType, statistic) || 0
-              )
-            ),
-            Math.max(
-              10,
-              yBufferTop *
-                max(
-                  dates,
-                  (date) =>
-                    getStatistic(timeseries[date], chartType, statistic) || 0
-                )
-            ),
-          ])
-          .nice(4)
-          .range([chartBottom, margin.top]);
-
-      return scaleLinear()
-        .clamp(true)
-        .domain([
-          yBufferBottom *
-            Math.min(
-              0,
-              min(
-                dates,
-                (date) =>
-                  getStatistic(timeseries[date], chartType, statistic) || 0
-              )
-            ),
-          Math.max(
-            1,
-            yBufferTop *
-              max(
-                dates,
-                (date) =>
-                  getStatistic(timeseries[date], chartType, statistic) || 0
-              )
-          ),
-        ])
-        .nice(4)
-        .range([chartBottom, margin.top]);
-    };
-
     function mousemove() {
       const xm = mouse(this)[0];
       const date = xScale.invert(xm);
@@ -207,8 +123,28 @@ function Timeseries({timeseries, dates, chartType, isUniform, isLog}) {
       const t = svg.transition().duration(D3_TRANSITION_DURATION);
 
       const statistic = TIMESERIES_STATISTICS[i];
-      const yScale = generateYScale(statistic);
-      const color = COLORS[statistic];
+      const yScale = scaleLinear()
+        .clamp(true)
+        .domain([
+          yBufferBottom *
+            Math.min(
+              0,
+              min(dates, (date) =>
+                getStatistic(timeseries[date], chartType, statistic)
+              )
+            ),
+          Math.max(
+            1,
+            yBufferTop *
+              max(dates, (date) =>
+                getStatistic(timeseries[date], chartType, statistic)
+              )
+          ),
+        ])
+        .nice(4)
+        .range([chartBottom, margin.top]);
+
+      const color = STATISTIC_CONFIGS[statistic].color;
 
       /* X axis */
       svg
@@ -242,7 +178,7 @@ function Timeseries({timeseries, dates, chartType, isUniform, isLog}) {
         .attr('r', barWidth / 2)
         .attr('cx', (date) => xScale(parseIndiaDate(date)))
         .attr('cy', (date) =>
-          yScale(getStatistic(timeseries[date], chartType, statistic) || 0)
+          yScale(getStatistic(timeseries[date], chartType, statistic))
         );
 
       if (chartType === 'total') {
@@ -257,7 +193,7 @@ function Timeseries({timeseries, dates, chartType, isUniform, isLog}) {
           .curve(curveMonotoneX)
           .x((date) => xScale(parseIndiaDate(date)))
           .y((date) =>
-            yScale(getStatistic(timeseries[date], chartType, statistic) || 0)
+            yScale(getStatistic(timeseries[date], chartType, statistic))
           );
 
         let pathLength;
@@ -316,7 +252,7 @@ function Timeseries({timeseries, dates, chartType, isUniform, isLog}) {
           .attr('y1', yScale(0))
           .attr('x2', (date) => xScale(parseIndiaDate(date)))
           .attr('y2', (date) =>
-            yScale(getStatistic(timeseries[date], chartType, statistic) || 0)
+            yScale(getStatistic(timeseries[date], chartType, statistic))
           );
       }
 
@@ -327,7 +263,7 @@ function Timeseries({timeseries, dates, chartType, isUniform, isLog}) {
         .on('mouseout', mouseout)
         .on('touchend', mouseout);
     });
-  }, [chartType, dimensions, getBarWidth, isUniform, isLog, timeseries, dates]);
+  }, [chartType, dimensions, getBarWidth, timeseries, dates]);
 
   useEffect(() => {
     const barWidth = getBarWidth();
@@ -381,6 +317,7 @@ function Timeseries({timeseries, dates, chartType, isUniform, isLog}) {
       <div className="Timeseries">
         {TIMESERIES_STATISTICS.map((statistic, index) => {
           const delta = getStatisticDelta(statistic, index);
+          const statisticConfig = STATISTIC_CONFIGS[statistic];
           return (
             <div
               key={statistic}
@@ -390,7 +327,9 @@ function Timeseries({timeseries, dates, chartType, isUniform, isLog}) {
             >
               {highlightedDate && (
                 <div className={classnames('stats', `is-${statistic}`)}>
-                  <h5 className="title">{t(capitalize(statistic))}</h5>
+                  <h5 className="title">
+                    {t(capitalize(statisticConfig.displayName))}
+                  </h5>
                   <h5 className="title">
                     {formatDate(highlightedDate, 'dd MMMM')}
                   </h5>
@@ -401,10 +340,20 @@ function Timeseries({timeseries, dates, chartType, isUniform, isLog}) {
                           timeseries?.[highlightedDate],
                           chartType,
                           statistic
-                        )
+                        ),
+                        statisticConfig.format !== 'short'
+                          ? statisticConfig.format
+                          : 'int',
+                        statistic
                       )}
                     </h2>
-                    <h6>{`${delta >= 0 ? '+' : ''}${formatNumber(delta)}`}</h6>
+                    <h6>{`${delta > 0 ? '+' : ''}${formatNumber(
+                      delta,
+                      statisticConfig.format !== 'short'
+                        ? statisticConfig.format
+                        : 'int',
+                      statistic
+                    )}`}</h6>
                   </div>
                 </div>
               )}
@@ -428,10 +377,6 @@ function Timeseries({timeseries, dates, chartType, isUniform, isLog}) {
 
 const isEqual = (prevProps, currProps) => {
   if (!equal(currProps.chartType, prevProps.chartType)) {
-    return false;
-  } else if (!equal(currProps.isUniform, prevProps.isUniform)) {
-    return false;
-  } else if (!equal(currProps.isLog, prevProps.isLog)) {
     return false;
   } else if (
     !equal(

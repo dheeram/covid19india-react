@@ -30,27 +30,23 @@ function StateMeta({stateCode, data, timeseries}) {
     data[stateCode],
     'total',
     'confirmed',
-    {perMillion: true}
+    true
   );
-  const testPerMillion = getStatistic(data[stateCode], 'total', 'tested', {
-    perMillion: true,
-  });
+  const testPerMillion = getStatistic(data[stateCode], 'total', 'tested', true);
   const totalConfirmedPerMillion = getStatistic(
     data['TT'],
     'total',
     'confirmed',
-    {perMillion: true}
+    true
   );
 
-  const activePercent = getStatistic(data[stateCode], 'total', 'active', {
-    percentagePerConfirmed: true,
-  });
-  const recoveryPercent = getStatistic(data[stateCode], 'total', 'recovered', {
-    percentagePerConfirmed: true,
-  });
-  const deathPercent = getStatistic(data[stateCode], 'total', 'deceased', {
-    percentagePerConfirmed: true,
-  });
+  const activePercent = getStatistic(data[stateCode], 'total', 'activeRatio');
+  const recoveryPercent = getStatistic(
+    data[stateCode],
+    'total',
+    'recoveryRatio'
+  );
+  const deathPercent = getStatistic(data[stateCode], 'total', 'cfr');
 
   const growthRate =
     ((confirmed - prevWeekConfirmed) / prevWeekConfirmed) * 100;

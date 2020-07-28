@@ -1,10 +1,19 @@
-import {INDIA_ISO_SUFFIX, LOCALE_SHORTHANDS} from '../constants';
+import {
+  INDIA_ISO_SUFFIX,
+  LOCALE_SHORTHANDS,
+  NAN_STATISTICS,
+  PER_MILLION_OPTIONS,
+  STATISTIC_OPTIONS,
+} from '../constants';
 
 import {format, formatDistance, formatISO, subDays} from 'date-fns';
 import {utcToZonedTime} from 'date-fns-tz';
 import i18n from 'i18next';
 
 let locale = null;
+const numberFormatter = new Intl.NumberFormat('en-IN', {
+  maximumFractionDigits: 1,
+});
 
 const getLocale = () => {
   import('date-fns/locale/').then((localePackage) => {
@@ -57,34 +66,26 @@ export const formatDate = (unformattedDate, formatString) => {
 };
 
 export const abbreviateNumber = (number) => {
-  const numberFormatter = new Intl.NumberFormat('en-IN', {
-    maximumFractionDigits: 2,
-  });
-
   if (number < 1e3) return numberFormatter.format(number);
-  if (number >= 1e3 && number < 1e6)
+  else if (number >= 1e3 && number < 1e6)
     return numberFormatter.format(number / 1e3) + 'K';
-  if (number >= 1e6 && number < 1e9)
+  else if (number >= 1e6 && number < 1e9)
     return numberFormatter.format(number / 1e6) + 'M';
-  if (number >= 1e9 && number < 1e12)
+  else if (number >= 1e9 && number < 1e12)
     return numberFormatter.format(number / 1e9) + 'B';
-  if (number >= 1e12) return numberFormatter.format(number / 1e12) + 'T';
+  else if (number >= 1e12) return numberFormatter.format(number / 1e12) + 'T';
 };
 
-export const formatNumber = (value, option) => {
+export const formatNumber = (value, option, statistic) => {
+  if (statistic && value === 0 && NAN_STATISTICS.includes(statistic))
+    value = NaN;
+
   if (isNaN(value)) return '-';
   else if (option === 'short') {
     return abbreviateNumber(value);
-  }
-
-  if (option === 'int') {
+  } else if (option === 'int') {
     value = Math.floor(value);
   }
-
-  const numberFormatter = new Intl.NumberFormat('en-IN', {
-    maximumFractionDigits: 2,
-  });
-
   return numberFormatter.format(value) + (option === '%' ? '%' : '');
 };
 
@@ -99,39 +100,58 @@ export const toTitleCase = (str) => {
   });
 };
 
-export const getStatistic = (data, type, statistic, options = {}) => {
+export const getStatistic = (data, type, statistic, perMillion = false) => {
+  let {key, normalizeByKey: normalizeBy, multiplyFactor} = {
+    ...STATISTIC_OPTIONS[statistic],
+    ...(perMillion &&
+      !STATISTIC_OPTIONS[statistic]?.normalizeByKey &&
+      PER_MILLION_OPTIONS),
+  };
+
   let count;
-  if (statistic === 'population') {
-    count = type === 'total' ? data?.meta?.population || NaN : 0;
-  } else if (statistic === 'tested') {
-    count = data?.[type]?.[statistic] || NaN;
-  } else if (statistic === 'active') {
+  if (key === 'population') {
+    count = type === 'total' ? data?.meta?.population : 0;
+  } else if (key === 'tested') {
+    count = data?.[type]?.tested?.samples;
+  } else if (key === 'tested_states') {
+    count = data?.[type]?.tested?.states?.samples;
+  } else if (key === 'positives') {
+    if (data?.[type]?.tested?.positives)
+      count = data?.[type]?.tested?.positives;
+    else if (data?.[type]?.tested?.states?.positives) {
+      count = data?.[type]?.tested?.states?.positives;
+      if (normalizeBy === 'tested') normalizeBy = 'testedStates';
+    }
+  } else if (key === 'active') {
     const confirmed = data?.[type]?.confirmed || 0;
     const deceased = data?.[type]?.deceased || 0;
     const recovered = data?.[type]?.recovered || 0;
-    const migrated = data?.[type]?.migrated || 0;
-    count = confirmed - deceased - recovered - migrated;
+    const other = data?.[type]?.other || 0;
+    count = confirmed - deceased - recovered - other;
   } else {
-    count = data?.[type]?.[statistic] || 0;
+    count = data?.[type]?.[key];
   }
 
-  if (options.percentagePerConfirmed) {
-    const confirmed = data?.total?.confirmed || 0;
-    if (type === 'delta') {
-      const prevConfirmed = confirmed - data?.delta?.confirmed || 0;
-      const currTotal = getStatistic(data, 'total', statistic);
-      const prevTotal = currTotal - count;
-      const currRate = confirmed ? currTotal / confirmed : NaN;
-      const prevRate = prevConfirmed ? prevTotal / prevConfirmed : NaN;
-      return 100 * (currRate - prevRate);
-    } else if (type === 'total') {
-      return confirmed ? (100 * count) / confirmed : NaN;
+  if (normalizeBy) {
+    if (type === 'total') {
+      const normStatistic = getStatistic(data, 'total', normalizeBy);
+      count /= normStatistic;
+    } else {
+      const currStatisticDelta = count;
+      const currStatistic = getStatistic(data, 'total', key);
+      const prevStatistic = currStatistic - currStatisticDelta;
+
+      const normStatisticDelta = getStatistic(data, 'delta', {
+        key: normalizeBy,
+      });
+      const normStatistic = getStatistic(data, 'total', normalizeBy);
+      const prevNormStatistic = normStatistic - normStatisticDelta;
+
+      count = currStatistic / normStatistic - prevStatistic / prevNormStatistic;
     }
-  } else if (options.perMillion) {
-    return (1e6 * count) / data?.meta?.population || 0;
-  } else {
-    return count;
   }
+
+  return (multiplyFactor || 1) * ((isFinite(count) && count) || 0);
 };
 
 export const fetcher = (url) => {

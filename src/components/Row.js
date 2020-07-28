@@ -5,7 +5,6 @@ import Tooltip from './Tooltip';
 
 import {
   STATE_NAMES,
-  STATISTICS_CONFIGS,
   TABLE_STATISTICS,
   TABLE_STATISTICS_EXPANDED,
   UNKNOWN_DISTRICT_KEY,
@@ -68,26 +67,18 @@ function Row({
   const sortingFunction = useCallback(
     (districtNameA, districtNameB) => {
       if (sortData.sortColumn !== 'districtName') {
-        const statisticConfig = STATISTICS_CONFIGS[sortData.sortColumn];
-        const statisticOptions = {
-          ...statisticConfig.options,
-          perMillion: isPerMillion,
-        };
-
-        const statisticA =
-          getStatistic(
-            data.districts[districtNameA],
-            sortData.delta ? 'delta' : 'total',
-            statisticConfig.key,
-            statisticOptions
-          ) || 0;
-        const statisticB =
-          getStatistic(
-            data.districts[districtNameB],
-            sortData.delta ? 'delta' : 'total',
-            statisticConfig.key,
-            statisticOptions
-          ) || 0;
+        const statisticA = getStatistic(
+          data.districts[districtNameA],
+          sortData.delta ? 'delta' : 'total',
+          sortData.sortColumn,
+          isPerMillion
+        );
+        const statisticB = getStatistic(
+          data.districts[districtNameB],
+          sortData.delta ? 'delta' : 'total',
+          sortData.sortColumn,
+          isPerMillion
+        );
         return sortData.isAscending
           ? statisticA - statisticB
           : statisticB - statisticA;
