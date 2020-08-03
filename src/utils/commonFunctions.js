@@ -50,10 +50,12 @@ export const formatLastUpdated = (unformattedDate) => {
 };
 
 export const parseIndiaDate = (isoDate) => {
+  if (!isoDate) return getIndiaDate();
   return utcToZonedTime(new Date(isoDate + INDIA_ISO_SUFFIX), 'Asia/Kolkata');
 };
 
 export const formatDate = (unformattedDate, formatString) => {
+  if (!unformattedDate) return '';
   if (
     typeof unformattedDate === 'string' &&
     unformattedDate.match(/^\d{4}-([0]\d|1[0-2])-([0-2]\d|3[01])$/g)
@@ -66,14 +68,17 @@ export const formatDate = (unformattedDate, formatString) => {
 };
 
 export const abbreviateNumber = (number) => {
-  if (number < 1e3) return numberFormatter.format(number);
-  else if (number >= 1e3 && number < 1e6)
+  if (Math.abs(number) < 1e3) return numberFormatter.format(number);
+  else if (Math.abs(number) >= 1e3 && Math.abs(number) < 1e5)
     return numberFormatter.format(number / 1e3) + 'K';
-  else if (number >= 1e6 && number < 1e9)
-    return numberFormatter.format(number / 1e6) + 'M';
-  else if (number >= 1e9 && number < 1e12)
-    return numberFormatter.format(number / 1e9) + 'B';
-  else if (number >= 1e12) return numberFormatter.format(number / 1e12) + 'T';
+  else if (Math.abs(number) >= 1e5 && Math.abs(number) < 1e7)
+    return numberFormatter.format(number / 1e5) + 'L';
+  else if (Math.abs(number) >= 1e7 && Math.abs(number) < 1e10)
+    return numberFormatter.format(number / 1e7) + 'Cr';
+  else if (Math.abs(number) >= 1e10 && Math.abs(number) < 1e14)
+    return numberFormatter.format(number / 1e10) + 'K Cr';
+  else if (Math.abs(number) >= 1e14)
+    return numberFormatter.format(number / 1e14) + 'L Cr';
 };
 
 export const formatNumber = (value, option, statistic) => {

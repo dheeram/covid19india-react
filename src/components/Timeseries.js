@@ -16,12 +16,11 @@ import classnames from 'classnames';
 import {min, max, bisector} from 'd3-array';
 import {axisBottom, axisRight} from 'd3-axis';
 import {interpolatePath} from 'd3-interpolate-path';
-import {scaleTime, scaleLinear} from 'd3-scale';
+import {scaleTime, scaleLinear, scaleLog} from 'd3-scale';
 import {select, mouse} from 'd3-selection';
 import {line, curveMonotoneX} from 'd3-shape';
 // eslint-disable-next-line
 import {transition} from 'd3-transition';
-import {formatISO, subDays} from 'date-fns';
 import equal from 'fast-deep-equal';
 import React, {useCallback, useEffect, useRef, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -29,7 +28,7 @@ import {useTranslation} from 'react-i18next';
 // Chart margins
 const margin = {top: 15, right: 35, bottom: 25, left: 25};
 
-function Timeseries({timeseries, dates, chartType}) {
+function Timeseries({timeseries, dates, chartType, isUniform, isLog}) {
   const {t} = useTranslation();
   const refs = useRef([]);
 
@@ -93,9 +92,88 @@ function Timeseries({timeseries, dates, chartType}) {
     };
 
     const yAxis = (g, yScale) =>
-      g
-        .attr('class', 'y-axis')
-        .call(axisRight(yScale).ticks(4, '0~s').tickPadding(4));
+      g.attr('class', 'y-axis').call(
+        axisRight(yScale)
+          .ticks(4)
+          .tickFormat((num) => formatNumber(num, 'short'))
+          .tickPadding(4)
+      );
+
+    const uniformScaleMin = min(dates, (date) =>
+      getStatistic(timeseries[date], chartType, 'active')
+    );
+
+    const uniformScaleMax = max(dates, (date) =>
+      Math.max(
+        getStatistic(timeseries[date], chartType, 'confirmed'),
+        getStatistic(timeseries[date], chartType, 'recovered'),
+        getStatistic(timeseries[date], chartType, 'deceased')
+      )
+    );
+
+    const yScaleUniformLinear = scaleLinear()
+      .clamp(true)
+      .domain([uniformScaleMin, Math.max(1, yBufferTop * uniformScaleMax)])
+      .nice(4)
+      .range([chartBottom, margin.top]);
+
+    const yScaleUniformLog = scaleLog()
+      .clamp(true)
+      .domain([
+        Math.max(1, uniformScaleMin),
+        Math.max(10, yBufferTop * uniformScaleMax),
+      ])
+      .nice(4)
+      .range([chartBottom, margin.top]);
+
+    const generateYScale = (statistic) => {
+      if (isUniform && chartType === 'total' && isLog && statistic !== 'tested')
+        return yScaleUniformLog;
+
+      if (isUniform && statistic !== 'tested') return yScaleUniformLinear;
+
+      if (chartType === 'total' && isLog)
+        return scaleLog()
+          .clamp(true)
+          .domain([
+            Math.max(
+              1,
+              min(dates, (date) =>
+                getStatistic(timeseries[date], chartType, statistic)
+              )
+            ),
+            Math.max(
+              10,
+              yBufferTop *
+                max(dates, (date) =>
+                  getStatistic(timeseries[date], chartType, statistic)
+                )
+            ),
+          ])
+          .nice(4)
+          .range([chartBottom, margin.top]);
+
+      return scaleLinear()
+        .clamp(true)
+        .domain([
+          yBufferBottom *
+            Math.min(
+              0,
+              min(dates, (date) =>
+                getStatistic(timeseries[date], chartType, statistic)
+              )
+            ),
+          Math.max(
+            1,
+            yBufferTop *
+              max(dates, (date) =>
+                getStatistic(timeseries[date], chartType, statistic)
+              )
+          ),
+        ])
+        .nice(4)
+        .range([chartBottom, margin.top]);
+    };
 
     function mousemove() {
       const xm = mouse(this)[0];
@@ -123,27 +201,7 @@ function Timeseries({timeseries, dates, chartType}) {
       const t = svg.transition().duration(D3_TRANSITION_DURATION);
 
       const statistic = TIMESERIES_STATISTICS[i];
-      const yScale = scaleLinear()
-        .clamp(true)
-        .domain([
-          yBufferBottom *
-            Math.min(
-              0,
-              min(dates, (date) =>
-                getStatistic(timeseries[date], chartType, statistic)
-              )
-            ),
-          Math.max(
-            1,
-            yBufferTop *
-              max(dates, (date) =>
-                getStatistic(timeseries[date], chartType, statistic)
-              )
-          ),
-        ])
-        .nice(4)
-        .range([chartBottom, margin.top]);
-
+      const yScale = generateYScale(statistic);
       const color = STATISTIC_CONFIGS[statistic].color;
 
       /* X axis */
@@ -173,9 +231,9 @@ function Timeseries({timeseries, dates, chartType}) {
             .attr('stroke', color)
             .attr('cy', chartBottom)
             .attr('cx', (date) => xScale(parseIndiaDate(date)))
+            .attr('r', barWidth / 2)
         )
         .transition(t)
-        .attr('r', barWidth / 2)
         .attr('cx', (date) => xScale(parseIndiaDate(date)))
         .attr('cy', (date) =>
           yScale(getStatistic(timeseries[date], chartType, statistic))
@@ -263,7 +321,7 @@ function Timeseries({timeseries, dates, chartType}) {
         .on('mouseout', mouseout)
         .on('touchend', mouseout);
     });
-  }, [chartType, dimensions, getBarWidth, timeseries, dates]);
+  }, [chartType, dimensions, getBarWidth, isUniform, isLog, timeseries, dates]);
 
   useEffect(() => {
     const barWidth = getBarWidth();
@@ -280,24 +338,22 @@ function Timeseries({timeseries, dates, chartType}) {
   const getStatisticDelta = useCallback(
     (statistic) => {
       if (!highlightedDate) return;
-      const deltaToday = getStatistic(
+      const currCount = getStatistic(
         timeseries?.[highlightedDate],
-        'delta',
+        chartType,
         statistic
       );
-      if (chartType === 'total') return deltaToday;
+      const prevDate =
+        dates[dates.findIndex((date) => date === highlightedDate) - 1];
 
-      const yesterday = formatISO(subDays(parseIndiaDate(highlightedDate), 1), {
-        representation: 'date',
-      });
-      const deltaYesterday = getStatistic(
-        timeseries?.[yesterday],
-        'delta',
+      const prevCount = getStatistic(
+        timeseries?.[prevDate],
+        chartType,
         statistic
       );
-      return deltaToday - deltaYesterday;
+      return currCount - prevCount;
     },
-    [timeseries, highlightedDate, chartType]
+    [timeseries, dates, highlightedDate, chartType]
   );
 
   const trail = useMemo(() => {
@@ -377,6 +433,10 @@ function Timeseries({timeseries, dates, chartType}) {
 
 const isEqual = (prevProps, currProps) => {
   if (!equal(currProps.chartType, prevProps.chartType)) {
+    return false;
+  } else if (!equal(currProps.isUniform, prevProps.isUniform)) {
+    return false;
+  } else if (!equal(currProps.isLog, prevProps.isLog)) {
     return false;
   } else if (
     !equal(

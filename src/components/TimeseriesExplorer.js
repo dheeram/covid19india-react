@@ -8,7 +8,7 @@ import {
 import useIsVisible from '../hooks/useIsVisible';
 import {getIndiaYesterdayISO, parseIndiaDate} from '../utils/commonFunctions';
 
-import {PinIcon, ReplyIcon} from '@primer/octicons-v2-react';
+import {IssueOpenedIcon, PinIcon, ReplyIcon} from '@primer/octicons-v2-react';
 import classnames from 'classnames';
 import {formatISO, sub} from 'date-fns';
 import equal from 'fast-deep-equal';
@@ -34,6 +34,8 @@ function TimeseriesExplorer({
     TIMESERIES_LOOKBACKS.MONTH
   );
   const [chartType, setChartType] = useLocalStorage('chartType', 'total');
+  const [isUniform, setIsUniform] = useLocalStorage('isUniform', true);
+  const [isLog, setIsLog] = useLocalStorage('isLog', false);
   const explorerElement = useRef();
   const isVisible = useIsVisible(explorerElement, {once: true});
 
@@ -120,23 +122,27 @@ function TimeseriesExplorer({
   }, [regionHighlighted.stateCode, regionHighlighted.districtName, regions]);
 
   const dates = useMemo(() => {
-    const today = timelineDate || getIndiaYesterdayISO();
+    const cutOffDateUpper = timelineDate || getIndiaYesterdayISO();
     const pastDates = Object.keys(selectedTimeseries || {}).filter(
-      (date) => date <= today
+      (date) => date <= cutOffDateUpper
     );
 
-    if (lookback === TIMESERIES_LOOKBACKS.TWO_WEEKS) {
-      const cutOffDate = formatISO(sub(parseIndiaDate(today), {weeks: 2}), {
-        representation: 'date',
-      });
-      return pastDates.filter((date) => date >= cutOffDate);
-    } else if (lookback === TIMESERIES_LOOKBACKS.MONTH) {
-      const cutOffDate = formatISO(sub(parseIndiaDate(today), {months: 1}), {
-        representation: 'date',
-      });
-      return pastDates.filter((date) => date >= cutOffDate);
+    const lastDate = pastDates[pastDates.length - 1];
+    if (lookback === TIMESERIES_LOOKBACKS.BEGINNING) {
+      return pastDates;
     }
-    return pastDates;
+
+    let cutOffDateLower;
+    if (lookback === TIMESERIES_LOOKBACKS.MONTH) {
+      cutOffDateLower = formatISO(sub(parseIndiaDate(lastDate), {months: 1}), {
+        representation: 'date',
+      });
+    } else if (lookback === TIMESERIES_LOOKBACKS.THREE_MONTHS) {
+      cutOffDateLower = formatISO(sub(parseIndiaDate(lastDate), {months: 3}), {
+        representation: 'date',
+      });
+    }
+    return pastDates.filter((date) => date >= cutOffDateLower);
   }, [selectedTimeseries, timelineDate, lookback]);
 
   const handleChange = useCallback(
@@ -192,6 +198,36 @@ function TimeseriesExplorer({
             )
           )}
         </div>
+
+        <div className="scale-modes">
+          <label className="main">{t('Scale Modes')}</label>
+          <div className="timeseries-mode">
+            <label htmlFor="timeseries-mode">{t('Uniform')}</label>
+            <input
+              id="timeseries-mode"
+              type="checkbox"
+              className="switch"
+              checked={isUniform}
+              aria-label={t('Checked by default to scale uniformly.')}
+              onChange={setIsUniform.bind(this, !isUniform)}
+            />
+          </div>
+          <div
+            className={`timeseries-logmode ${
+              chartType !== 'total' ? 'disabled' : ''
+            }`}
+          >
+            <label htmlFor="timeseries-logmode">{t('Logarithmic')}</label>
+            <input
+              id="timeseries-logmode"
+              type="checkbox"
+              checked={chartType === 'total' && isLog}
+              className="switch"
+              disabled={chartType !== 'total'}
+              onChange={setIsLog.bind(this, !isLog)}
+            />
+          </div>
+        </div>
       </div>
 
       {dropdownRegions && (
@@ -231,7 +267,7 @@ function TimeseriesExplorer({
           <Timeseries
             timeseries={selectedTimeseries}
             regionHighlighted={selectedRegion}
-            {...{dates, chartType}}
+            {...{dates, chartType, isUniform, isLog}}
           />
         </Suspense>
       )}
@@ -249,6 +285,13 @@ function TimeseriesExplorer({
             {t(option)}
           </button>
         ))}
+      </div>
+
+      <div className="alert">
+        <IssueOpenedIcon size={24} />
+        <div className="alert-right">
+          {t('Tested chart is independent of uniform scaling')}
+        </div>
       </div>
     </div>
   );
