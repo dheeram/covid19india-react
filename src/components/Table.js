@@ -11,7 +11,7 @@ import {
   TABLE_STATISTICS_EXPANDED,
   UNASSIGNED_STATE_CODE,
 } from '../constants';
-import {getStatistic} from '../utils/commonFunctions';
+import {getTableStatistic, parseIndiaDate} from '../utils/commonFunctions';
 
 import {
   FilterIcon,
@@ -21,9 +21,10 @@ import {
   QuestionIcon,
 } from '@primer/octicons-v2-react';
 import classnames from 'classnames';
+import {max} from 'date-fns';
 import equal from 'fast-deep-equal';
 import produce from 'immer';
-import React, {useCallback, useEffect, useState, lazy} from 'react';
+import React, {useCallback, useEffect, useMemo, useState, lazy} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link} from 'react-router-dom';
 import {useTrail, useTransition, animated, config} from 'react-spring';
@@ -35,6 +36,7 @@ const Row = lazy(() => import('./Row'));
 
 function Table({
   data: states,
+  date: timelineDate,
   regionHighlighted,
   setRegionHighlighted,
   expandTable,
@@ -78,24 +80,35 @@ function Table({
   const [isPerMillion, setIsPerMillion] = useState(false);
   const [isInfoVisible, setIsInfoVisible] = useState(false);
 
+  const lastUpdatedTT = useMemo(() => {
+    const updatedDates = [
+      states['TT']?.meta?.['last_updated'] || timelineDate,
+      states['TT']?.meta?.tested?.['last_updated'],
+    ];
+    return max(
+      updatedDates.filter((date) => date).map((date) => parseIndiaDate(date))
+    );
+  }, [states, timelineDate]);
+
   const sortingFunction = useCallback(
     (regionKeyA, regionKeyB) => {
       if (sortData.sortColumn !== 'regionName') {
         const statisticConfig = STATISTIC_CONFIGS[sortData.sortColumn];
         const dataType =
           sortData.delta && !statisticConfig.hideDelta ? 'delta' : 'total';
-        const statisticA = getStatistic(
+
+        const statisticA = getTableStatistic(
           districts?.[regionKeyA] || states[regionKeyA],
-          dataType,
           sortData.sortColumn,
-          isPerMillion
-        );
-        const statisticB = getStatistic(
+          isPerMillion,
+          lastUpdatedTT
+        )[dataType];
+        const statisticB = getTableStatistic(
           districts?.[regionKeyB] || states[regionKeyB],
-          dataType,
           sortData.sortColumn,
-          isPerMillion
-        );
+          isPerMillion,
+          lastUpdatedTT
+        )[dataType];
         return sortData.isAscending
           ? statisticA - statisticB
           : statisticB - statisticA;
@@ -112,6 +125,7 @@ function Table({
     [
       districts,
       isPerMillion,
+      lastUpdatedTT,
       sortData.delta,
       sortData.isAscending,
       sortData.sortColumn,
@@ -318,6 +332,7 @@ function Table({
                       regionHighlighted,
                       setRegionHighlighted,
                       expandTable,
+                      lastUpdatedTT,
                     }}
                   />
                 );
@@ -341,6 +356,7 @@ function Table({
                       regionHighlighted,
                       setRegionHighlighted,
                       expandTable,
+                      lastUpdatedTT,
                     }}
                   />
                 );
@@ -355,6 +371,7 @@ function Table({
               regionHighlighted,
               setRegionHighlighted,
               expandTable,
+              lastUpdatedTT,
             }}
           />
         </div>
@@ -377,6 +394,8 @@ const isEqual = (prevProps, currProps) => {
       currProps.regionHighlighted?.stateCode
     )
   ) {
+    return false;
+  } else if (!equal(prevProps.date, currProps.date)) {
     return false;
   } else if (
     !equal(
