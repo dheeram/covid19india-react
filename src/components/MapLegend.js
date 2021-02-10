@@ -12,7 +12,7 @@ import {format} from 'd3-format';
 import {interpolate, interpolateRound, quantize} from 'd3-interpolate';
 import {scaleLinear, scaleOrdinal, scaleBand} from 'd3-scale';
 import {select} from 'd3-selection';
-import React, {useEffect, useRef} from 'react';
+import {useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 
 function MapLegend({data, mapViz, mapScale, statistic}) {
@@ -24,11 +24,8 @@ function MapLegend({data, mapViz, mapScale, statistic}) {
 
   useEffect(() => {
     const svg = select(svgRef.current);
-    let {width, height} =
-      dimensions || wrapperRef.current.getBoundingClientRect();
-
-    if (!width || !height)
-      ({width, height} = wrapperRef.current.getBoundingClientRect());
+    const {width, height} = dimensions ||
+      wrapperRef.current?.getBoundingClientRect() || {width: 0, height: 0};
 
     if (!width || !height) return;
 

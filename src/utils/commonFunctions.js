@@ -46,8 +46,12 @@ export const getIndiaDateISO = () => {
   return formatISO(getIndiaDate(), {representation: 'date'});
 };
 
-export const getIndiaYesterdayISO = () => {
-  return formatISO(subDays(getIndiaDate(), 1), {representation: 'date'});
+export const getIndiaDateYesterday = () => {
+  return subDays(getIndiaDate(), 1);
+};
+
+export const getIndiaDateYesterdayISO = () => {
+  return formatISO(getIndiaDateYesterday(), {representation: 'date'});
 };
 
 export const formatLastUpdated = (unformattedDate) => {
@@ -91,7 +95,7 @@ export const abbreviateNumber = (number) => {
 };
 
 export const formatNumber = (value, option, statistic) => {
-  if (statistic && value === 0 && NAN_STATISTICS.includes(statistic))
+  if (statistic && NAN_STATISTICS.includes(statistic) && value === 0)
     value = NaN;
 
   if (isNaN(value)) return '-';
@@ -114,13 +118,33 @@ export const toTitleCase = (str) => {
   });
 };
 
-export const getStatistic = (data, type, statistic, perMillion = false) => {
-  const {key, normalizeByKey: normalizeBy, multiplyFactor} = {
+export const getStatistic = (
+  data,
+  type,
+  statistic,
+  {perMillion = false, movingAverage = false} = {}
+) => {
+  // TODO: Replace delta with daily to remove ambiguity
+  //       Or add another type for daily/delta
+  const {key, normalizeByKey: normalizeBy} = {
     ...STATISTIC_OPTIONS[statistic],
     ...(perMillion &&
       !STATISTIC_OPTIONS[statistic]?.normalizeByKey &&
       PER_MILLION_OPTIONS),
   };
+
+  let multiplyFactor = STATISTIC_OPTIONS[statistic]?.multiplyFactor || 1;
+  multiplyFactor *=
+    (!STATISTIC_OPTIONS[statistic]?.normalizeByKey &&
+      perMillion &&
+      PER_MILLION_OPTIONS?.multiplyFactor) ||
+    1;
+
+  if (type === 'delta' && movingAverage) {
+    type = 'delta7';
+    multiplyFactor *=
+      (!STATISTIC_OPTIONS[statistic]?.normalizeByKey && 1 / 7) || 1;
+  }
 
   let count;
   if (key === 'population') {
@@ -138,33 +162,17 @@ export const getStatistic = (data, type, statistic, perMillion = false) => {
   }
 
   if (normalizeBy) {
-    if (type === 'total') {
-      const normStatistic = getStatistic(data, 'total', normalizeBy);
-      count /= normStatistic;
-    } else {
-      const currStatisticDelta = count;
-      const currStatistic = getStatistic(data, 'total', key);
-      const prevStatistic = currStatistic - currStatisticDelta;
-
-      const normStatisticDelta = getStatistic(data, 'delta', {
-        key: normalizeBy,
-      });
-      const normStatistic = getStatistic(data, 'total', normalizeBy);
-      const prevNormStatistic = normStatistic - normStatisticDelta;
-
-      count = currStatistic / normStatistic - prevStatistic / prevNormStatistic;
-    }
+    count /= getStatistic(
+      data,
+      normalizeBy === 'population' ? 'total' : type,
+      normalizeBy
+    );
   }
 
-  return (multiplyFactor || 1) * ((isFinite(count) && count) || 0);
+  return multiplyFactor * ((isFinite(count) && count) || 0);
 };
 
-export const getTableStatistic = (
-  data,
-  statistic,
-  isPerMillion,
-  lastUpdatedTT
-) => {
+export const getTableStatistic = (data, statistic, args, lastUpdatedTT) => {
   const expired =
     (STATISTIC_OPTIONS[statistic].key === 'tested' ||
       STATISTIC_OPTIONS[statistic].normalizeByKey === 'tested') &&
@@ -173,12 +181,8 @@ export const getTableStatistic = (
       parseIndiaDate(data.meta?.tested?.['last_updated'])
     ) > TESTED_LOOKBACK_DAYS;
 
-  const total = !expired
-    ? getStatistic(data, 'total', statistic, isPerMillion)
-    : 0;
-  const delta = !expired
-    ? getStatistic(data, 'delta', statistic, isPerMillion)
-    : 0;
+  const total = !expired ? getStatistic(data, 'total', statistic, args) : 0;
+  const delta = !expired ? getStatistic(data, 'delta', statistic, args) : 0;
   return {total, delta};
 };
 

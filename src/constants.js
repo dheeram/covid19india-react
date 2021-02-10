@@ -1,4 +1,5 @@
 export const API_ROOT_URL = 'https://api.covid19india.org/v4/min';
+// export const API_ROOT_URL = 'http://127.0.0.1:8080/v4/min';
 
 export const LOCALE_SHORTHANDS = {
   english: 'en-US',
@@ -51,6 +52,12 @@ export const STATISTIC_DEFINITIONS = {
     format: 'short',
     options: {key: 'tested'},
   },
+  vaccinated: {
+    displayName: 'vaccine doses administered',
+    color: '#fb5581',
+    format: 'short',
+    options: {key: 'vaccinated'},
+  },
   activeRatio: {
     displayName: 'active ratio',
     format: '%',
@@ -83,7 +90,6 @@ export const STATISTIC_DEFINITIONS = {
   },
   tpr: {
     displayName: 'test positivity ratio',
-    color: '#fd7e14',
     format: '%',
     options: {
       key: 'confirmed',
@@ -118,7 +124,7 @@ export const PER_MILLION_OPTIONS = {
   multiplyFactor: 1e6,
 };
 
-export const NAN_STATISTICS = ['tested', 'tpr', 'population'];
+export const NAN_STATISTICS = ['tested', 'vaccinated', 'tpr', 'population'];
 
 export const PRIMARY_STATISTICS = [
   'confirmed',
@@ -127,15 +133,21 @@ export const PRIMARY_STATISTICS = [
   'deceased',
 ];
 
-export const TABLE_STATISTICS = [...PRIMARY_STATISTICS, 'tested'];
+export const BRUSH_STATISTICS = ['other', 'deceased', 'recovered', 'active'];
+
+export const TABLE_STATISTICS = [...PRIMARY_STATISTICS, 'tested', 'vaccinated'];
 
 export const TABLE_STATISTICS_EXPANDED = Object.keys(STATISTIC_DEFINITIONS);
 
-export const TIMESERIES_STATISTICS = [...PRIMARY_STATISTICS, 'tested'];
+export const TIMESERIES_STATISTICS = [
+  ...PRIMARY_STATISTICS,
+  'tested',
+  'vaccinated',
+];
 
 export const UPDATES_COUNT = 5;
 
-export const DISTRICT_TABLE_COUNT = 30;
+export const DISTRICT_TABLE_COUNT = 40;
 
 export const D3_TRANSITION_DURATION = 300;
 
@@ -158,11 +170,7 @@ export const TIMESERIES_CHART_TYPES = {
   delta: 'Daily',
 };
 
-export const TIMESERIES_LOOKBACKS = {
-  BEGINNING: 'Beginning',
-  THREE_MONTHS: '3 Months',
-  MONTH: '1 Month',
-};
+export const TIMESERIES_LOOKBACK_DAYS = [null, 90, 30];
 
 export const MAP_VIZS = {
   CHOROPLETH: 0,

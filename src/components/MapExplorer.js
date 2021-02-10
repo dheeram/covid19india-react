@@ -21,7 +21,8 @@ import {
 import classnames from 'classnames';
 import equal from 'fast-deep-equal';
 import produce from 'immer';
-import React, {
+import {
+  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -84,14 +85,10 @@ function MapExplorer({
       switch (option) {
         case MAP_VIZS.CHOROPLETH:
           setMapViz(MAP_VIZS.CHOROPLETH);
-          return;
-
+          break;
         case MAP_VIZS.BUBBLES:
           setMapViz(MAP_VIZS.BUBBLES);
-          return;
-
-        default:
-          return;
+          break;
       }
     },
     [setMapViz]
@@ -252,7 +249,7 @@ function MapExplorer({
             </div>
 
             {mapMeta.mapType === MAP_TYPES.COUNTRY && (
-              <React.Fragment>
+              <>
                 <div className="divider" />
                 <div
                   className={classnames('boundary fadeInUp', {
@@ -263,7 +260,7 @@ function MapExplorer({
                 >
                   <OrganizationIcon />
                 </div>
-              </React.Fragment>
+              </>
             )}
 
             {mapMeta.mapType === MAP_TYPES.STATE && (
@@ -352,4 +349,4 @@ const isEqual = (prevProps, currProps) => {
   return true;
 };
 
-export default React.memo(MapExplorer, isEqual);
+export default memo(MapExplorer, isEqual);

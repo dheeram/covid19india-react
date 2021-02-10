@@ -6,17 +6,17 @@ import {
   formatNumber,
   formatLastUpdated,
   getStatistic,
-  getIndiaYesterdayISO,
+  getIndiaDateYesterdayISO,
   parseIndiaDate,
 } from '../utils/commonFunctions';
 
-import {differenceInDays} from 'date-fns';
-import React from 'react';
+import {formatISO, subDays} from 'date-fns';
+import {memo} from 'react';
 import {Compass} from 'react-feather';
 
 function StateMeta({stateCode, data, timeseries}) {
   const pastDates = Object.keys(timeseries || {}).filter(
-    (date) => date <= getIndiaYesterdayISO()
+    (date) => date <= getIndiaDateYesterdayISO()
   );
   const lastDate = pastDates[pastDates.length - 1];
   const lastConfirmed = getStatistic(
@@ -24,34 +24,25 @@ function StateMeta({stateCode, data, timeseries}) {
     'total',
     'confirmed'
   );
-  const prevWeekDate = pastDates
-    .reverse()
-    .find(
-      (date) =>
-        differenceInDays(parseIndiaDate(lastDate), parseIndiaDate(date)) >= 7
-    );
-  const prevWeekConfirmed = getStatistic(
-    timeseries?.[prevWeekDate],
-    'total',
-    'confirmed'
-  );
-  const diffDays = differenceInDays(
-    parseIndiaDate(lastDate),
-    parseIndiaDate(prevWeekDate)
-  );
+  const prevWeekConfirmed =
+    lastConfirmed - getStatistic(timeseries?.[lastDate], 'delta7', 'confirmed');
+
+  const prevWeekDate = formatISO(subDays(parseIndiaDate(lastDate), 7));
 
   const confirmedPerMillion = getStatistic(
     data[stateCode],
     'total',
     'confirmed',
-    true
+    {perMillion: true}
   );
-  const testPerMillion = getStatistic(data[stateCode], 'total', 'tested', true);
+  const testPerMillion = getStatistic(data[stateCode], 'total', 'tested', {
+    perMillion: true,
+  });
   const totalConfirmedPerMillion = getStatistic(
     data['TT'],
     'total',
     'confirmed',
-    true
+    {perMillion: true}
   );
 
   const activePercent = getStatistic(data[stateCode], 'total', 'activeRatio');
@@ -63,10 +54,10 @@ function StateMeta({stateCode, data, timeseries}) {
   const deathPercent = getStatistic(data[stateCode], 'total', 'cfr');
 
   const growthRate =
-    (Math.pow(lastConfirmed / prevWeekConfirmed, 1 / diffDays) - 1) * 100;
+    (Math.pow(lastConfirmed / prevWeekConfirmed, 1 / 7) - 1) * 100;
 
   return (
-    <React.Fragment>
+    <>
       <div className="StateMeta population">
         <div className="meta-item population">
           <h3>Population</h3>
@@ -188,7 +179,7 @@ function StateMeta({stateCode, data, timeseries}) {
           }
         />
       </div>
-    </React.Fragment>
+    </>
   );
 }
 
@@ -201,4 +192,4 @@ const isEqual = (prevProps, currProps) => {
   return true;
 };
 
-export default React.memo(StateMeta, isEqual);
+export default memo(StateMeta, isEqual);

@@ -23,8 +23,6 @@ import {max} from 'd3-array';
 import {json} from 'd3-fetch';
 import {geoIdentity, geoPath} from 'd3-geo';
 import {scaleSqrt, scaleSequential} from 'd3-scale';
-// eslint-disable-next-line
-// import worker from 'workerize-loader!../workers/mapVisualizer';
 import {
   interpolateReds,
   interpolateBlues,
@@ -33,9 +31,9 @@ import {
   interpolatePurples,
   interpolateOranges,
 } from 'd3-scale-chromatic';
-import {select, event} from 'd3-selection';
+import {select} from 'd3-selection';
 import {transition} from 'd3-transition';
-import React, {useCallback, useEffect, useMemo, useRef} from 'react';
+import {useCallback, useEffect, useMemo, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useHistory} from 'react-router-dom';
 import useSWR from 'swr';
@@ -231,7 +229,17 @@ function MapVisualizer({
             .attr('stroke-width', 1.8)
             .attr('stroke-opacity', 0)
             .style('cursor', 'pointer')
-            .on('mouseenter', (d) => {
+            .on('mouseenter', (event, d) => {
+              if (onceTouchedRegion.current) return;
+              setRegionHighlighted({
+                stateCode: STATE_CODES[d.properties.st_nm],
+                districtName: d.properties.district,
+              });
+            })
+            .on('pointerdown', (event, d) => {
+              if (onceTouchedRegion.current === d)
+                onceTouchedRegion.current = null;
+              else onceTouchedRegion.current = d;
               setRegionHighlighted({
                 stateCode: STATE_CODES[d.properties.st_nm],
                 districtName: d.properties.district,
@@ -251,11 +259,7 @@ function MapVisualizer({
             .remove()
       )
       .attr('pointer-events', 'all')
-      .on('touchstart', (d) => {
-        if (onceTouchedRegion.current === d) onceTouchedRegion.current = null;
-        else onceTouchedRegion.current = d;
-      })
-      .on('click', (d) => {
+      .on('click', (event, d) => {
         event.stopPropagation();
         const stateCode = STATE_CODES[d.properties.st_nm];
         if (
@@ -349,7 +353,8 @@ function MapVisualizer({
         (update) => update,
         (exit) => exit.call((exit) => exit.transition(T).attr('r', 0).remove())
       )
-      .on('mouseenter', (feature) => {
+      .on('mouseenter', (event, feature) => {
+        if (onceTouchedRegion.current) return;
         setRegionHighlighted({
           stateCode: STATE_CODES[feature.properties.st_nm],
           districtName:
@@ -358,12 +363,19 @@ function MapVisualizer({
               : feature.properties.district || UNKNOWN_DISTRICT_KEY,
         });
       })
-      .on('touchstart', (feature) => {
+      .on('pointerdown', (event, feature) => {
         if (onceTouchedRegion.current === feature)
           onceTouchedRegion.current = null;
         else onceTouchedRegion.current = feature;
+        setRegionHighlighted({
+          stateCode: STATE_CODES[feature.properties.st_nm],
+          districtName:
+            mapView === MAP_VIEWS.STATES
+              ? null
+              : feature.properties.district || UNKNOWN_DISTRICT_KEY,
+        });
       })
-      .on('click', (feature) => {
+      .on('click', (event, feature) => {
         event.stopPropagation();
         if (onceTouchedRegion.current || mapMeta.mapType === MAP_TYPES.STATE)
           return;
@@ -503,7 +515,7 @@ function MapVisualizer({
   ]);
 
   return (
-    <React.Fragment>
+    <>
       <div className="svg-parent">
         <svg
           id="chart"
@@ -545,7 +557,7 @@ function MapVisualizer({
           </filter>
         </defs>
       </svg>
-    </React.Fragment>
+    </>
   );
 }
 

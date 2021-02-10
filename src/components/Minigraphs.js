@@ -5,7 +5,7 @@ import {
 } from '../constants';
 import {
   getStatistic,
-  getIndiaYesterdayISO,
+  getIndiaDateYesterdayISO,
   parseIndiaDate,
 } from '../utils/commonFunctions';
 
@@ -15,11 +15,10 @@ import {interpolatePath} from 'd3-interpolate-path';
 import {scaleTime, scaleLinear} from 'd3-scale';
 import {select} from 'd3-selection';
 import {line, curveMonotoneX} from 'd3-shape';
-// eslint-disable-next-line
-import {transition} from 'd3-transition';
+import 'd3-transition';
 import {formatISO, subDays} from 'date-fns';
 import equal from 'fast-deep-equal';
-import React, {useEffect, useRef, useMemo} from 'react';
+import {memo, useEffect, useRef, useMemo} from 'react';
 
 // Dimensions
 const [width, height] = [100, 75];
@@ -27,11 +26,11 @@ const margin = {top: 10, right: 10, bottom: 2, left: 5};
 
 function Minigraphs({timeseries, date: timelineDate}) {
   const refs = useRef([]);
+  const endDate = timelineDate || getIndiaDateYesterdayISO();
 
   const dates = useMemo(() => {
-    const cutOffDateUpper = timelineDate || getIndiaYesterdayISO();
     const pastDates = Object.keys(timeseries || {}).filter(
-      (date) => date <= cutOffDateUpper
+      (date) => date <= endDate
     );
     const lastDate = pastDates[pastDates.length - 1];
 
@@ -40,7 +39,7 @@ function Minigraphs({timeseries, date: timelineDate}) {
       {representation: 'date'}
     );
     return pastDates.filter((date) => date >= cutOffDateLower);
-  }, [timeseries, timelineDate]);
+  }, [endDate, timeseries]);
 
   useEffect(() => {
     const T = dates.length;
@@ -50,7 +49,10 @@ function Minigraphs({timeseries, date: timelineDate}) {
 
     const xScale = scaleTime()
       .clamp(true)
-      .domain(T ? [parseIndiaDate(dates[0]), parseIndiaDate(dates[T - 1])] : [])
+      .domain([
+        parseIndiaDate(dates[0] || endDate),
+        parseIndiaDate(dates[T - 1]) || endDate,
+      ])
       .range([margin.left, chartRight]);
 
     refs.current.forEach((ref, index) => {
@@ -107,6 +109,7 @@ function Minigraphs({timeseries, date: timelineDate}) {
                 const current = linePath(date);
                 return interpolatePath(previous, current);
               })
+              .selection()
         );
 
       svg
@@ -142,9 +145,10 @@ function Minigraphs({timeseries, date: timelineDate}) {
               .attr('cy', (date) =>
                 yScale(getStatistic(timeseries[date], 'delta', statistic))
               )
+              .selection()
         );
     });
-  }, [dates, timeseries]);
+  }, [endDate, dates, timeseries]);
 
   return (
     <div className="Minigraph">
@@ -180,4 +184,4 @@ const isEqual = (prevProps, currProps) => {
   return true;
 };
 
-export default React.memo(Minigraphs, isEqual);
+export default memo(Minigraphs, isEqual);

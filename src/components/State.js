@@ -1,16 +1,10 @@
-import DeltaBarGraph from './DeltaBarGraph';
-import Footer from './Footer';
-import Level from './Level';
-import MapSwitcher from './MapSwitcher';
-import StateHeader from './StateHeader';
-import StateMeta from './StateMeta';
-
 import {API_ROOT_URL, STATE_NAMES} from '../constants';
 import useIsVisible from '../hooks/useIsVisible';
 import {fetcher, formatNumber, getStatistic} from '../utils/commonFunctions';
 
 import classnames from 'classnames';
-import React, {
+import {
+  memo,
   useMemo,
   useState,
   useEffect,
@@ -25,9 +19,16 @@ import {useParams} from 'react-router-dom';
 import {useSessionStorage} from 'react-use';
 import useSWR from 'swr';
 
-const TimeseriesExplorer = lazy(() => import('./TimeseriesExplorer'));
+const DeltaBarGraph = lazy(() => import('./DeltaBarGraph'));
+const Footer = lazy(() => import('./Footer'));
+const Level = lazy(() => import('./Level'));
+const LevelVaccinated = lazy(() => import('./LevelVaccinated'));
 const MapExplorer = lazy(() => import('./MapExplorer'));
+const MapSwitcher = lazy(() => import('./MapSwitcher'));
 const Minigraphs = lazy(() => import('./Minigraphs'));
+const StateHeader = lazy(() => import('./StateHeader'));
+const StateMeta = lazy(() => import('./StateMeta'));
+const TimeseriesExplorer = lazy(() => import('./TimeseriesExplorer'));
 
 function State() {
   const {t} = useTranslation();
@@ -111,7 +112,7 @@ function State() {
   const lookback = showAllDistricts ? (window.innerWidth >= 540 ? 10 : 8) : 6;
 
   return (
-    <React.Fragment>
+    <>
       <Helmet>
         <title>
           Coronavirus Outbreak in {STATE_NAMES[stateCode]} - covid19india.org
@@ -135,6 +136,10 @@ function State() {
               forceRender={!!timeseriesResponseError}
             />
           </div>
+
+          {data?.[stateCode]?.total?.vaccinated && (
+            <LevelVaccinated data={data?.[stateCode]} />
+          )}
 
           {data && (
             <Suspense fallback={<div style={{minHeight: '50rem'}} />}>
@@ -165,7 +170,7 @@ function State() {
         </div>
 
         <div className="state-right">
-          <React.Fragment>
+          <>
             <div
               className="district-bar"
               style={!showAllDistricts ? {display: 'flex'} : {}}
@@ -288,13 +293,13 @@ function State() {
                 forceRender={!!timeseriesResponseError}
               />
             </Suspense>
-          </React.Fragment>
+          </>
         </div>
       </div>
 
       <Footer />
-    </React.Fragment>
+    </>
   );
 }
 
-export default React.memo(State);
+export default memo(State);

@@ -1,5 +1,10 @@
 // Color Pallete
 
+$white: #fff;
+$light: #f8f9fa;
+$dark: #343a40;
+$black: #000;
+
 $blue: #007bff;
 $blue-light: #007bff10;
 $blue-hover: #007bff30;
@@ -48,20 +53,16 @@ $purple-light: #201aa220;
 $purple-hover: #201aa230;
 $purple-mid: #201aa299;
 $purple-light-opaque: #e3e2f3;
-$pink: #fb5581;
-$pink-light: #ffa8cb30;
-$pink-hover: #ffa8cb60;
-$pink-mid: #fb558199;
+$pink: #db5581;
+$pink-light: #db558120;
+$pink-hover: #db558160;
+$pink-mid: #db558199;
 $brown: #b6854d;
 $brown-light: #b6854d10;
 $brown-hover: #b6854d30;
 $brown-mid: #b6854d99;
 $brick: #e23028;
 $brick-light: #e2302810;
-$white: #fff;
-$light: #f8f9fa;
-$dark: #343a40;
-$black: #000;
 
 // Dark mode variables
 $dark-m-gray: #161625;
@@ -206,7 +207,7 @@ h6 {
       transition: all 0.15s ease-in-out;
 
       &:hover {
-        background: $gray-hover;
+        background: $pblue-hover;
       }
 
       span {
@@ -283,7 +284,7 @@ h6 {
   }
 
   .alert-right {
-    margin-left: .25rem;
+    margin-left: 0.25rem;
     text-align: right;
     width: 9rem;
 
@@ -341,7 +342,7 @@ h6 {
     h5 {
       color: $gray;
       font-weight: 600;
-      margin-top: .5rem;
+      margin-top: 0.5rem;
     }
   }
 
@@ -676,14 +677,14 @@ h6 {
     background: $brick-light;
     border-radius: 5px;
     cursor: pointer;
-    padding: .25rem;
+    padding: 0.25rem;
   }
 
   .dropdown {
     background: $white;
     border-radius: 5px;
     height: 25rem;
-    left: -.25rem;
+    left: -0.25rem;
     overflow-y: scroll;
     position: absolute;
     top: 2.75rem;
@@ -729,8 +730,8 @@ h6 {
     flex-direction: row;
     font-size: 14px;
     margin-bottom: 0.25rem;
-    margin-right: .25rem;
-    padding: .25rem .5rem;
+    margin-right: 0.25rem;
+    padding: 0.25rem 0.5rem;
     text-transform: capitalize;
 
     &.is-selected {
@@ -810,9 +811,7 @@ h6 {
   }
 
   input {
-    -moz-box-shadow: 0 10px 35px rgba(0, 0, 0, 0.1);
-    -webkit-appearance: none !important;
-    -webkit-box-shadow: 0 10px 35px rgba(0, 0, 0, 0.1);
+    appearance: none !important;
     background: #fff;
     border: 0;
     border-radius: 5px;
@@ -908,8 +907,8 @@ h6 {
     border-radius: 5px;
     color: $pink;
     cursor: pointer;
-    font-size: .75rem;
-    padding: .75rem;
+    font-size: 0.75rem;
+    padding: 0.75rem;
     text-align: center;
   }
 
@@ -1096,7 +1095,7 @@ h6 {
       .result-description {
         align-self: flex-start;
         font-size: 0.75rem;
-        margin-bottom: .5rem;
+        margin-bottom: 0.5rem;
         margin-top: 1rem;
       }
 
@@ -1116,7 +1115,7 @@ h6 {
         flex-direction: row;
         font-size: 0.75rem;
         height: 1rem;
-        margin-right: .25rem;
+        margin-right: 0.25rem;
         margin-top: 0.25rem;
         padding: 0.25rem;
         text-align: right;
@@ -1152,7 +1151,7 @@ h6 {
       color: $gray-mid;
       display: flex;
       flex-direction: row;
-      padding: .1rem;
+      padding: 0.1rem;
 
       div {
         padding-top: 1px;
@@ -1475,6 +1474,25 @@ h6 {
   }
 }
 
+.LevelVaccinated {
+  align-items: center;
+  align-self: center;
+  animation-delay: 200ms;
+  background: $pink-light;
+  border-radius: 5px;
+  color: $pink;
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 0.5rem;
+  margin-top: 1.5rem;
+  padding: 0.5rem;
+
+  h4 {
+    font-weight: 500;
+    margin: 0 0 0 0.25rem;
+  }
+}
+
 abbr {
   text-decoration: none;
 
@@ -1496,7 +1514,7 @@ abbr {
 }
 
 .TableLoader {
-  margin-bottom: -.25rem;
+  margin-bottom: -0.25rem;
 }
 
 .table-top {
@@ -1506,7 +1524,7 @@ abbr {
   flex-direction: row;
   font-weight: 600;
   justify-content: space-between;
-  margin-bottom: .25rem;
+  margin-bottom: 0.25rem;
   width: 100%;
 
   .option-toggle,
@@ -1517,12 +1535,12 @@ abbr {
     border-radius: 5px;
     color: $gray-mid;
     cursor: pointer;
-    margin-right: .25rem;
-    padding: .5rem;
+    margin-right: 0.25rem;
+    padding: 0.5rem;
 
     svg {
       align-self: center;
-      margin: .25rem;
+      margin: 0.25rem;
     }
 
     &.is-highlighted {
@@ -1617,7 +1635,7 @@ abbr {
 
     svg {
       color: $gray-mid;
-      margin-bottom: .25rem;
+      margin-bottom: 0.25rem;
     }
 
     .is-confirmed {
@@ -1647,6 +1665,12 @@ abbr {
     .is-tested {
       svg {
         color: $purple;
+      }
+    }
+
+    .is-vaccinated {
+      svg {
+        color: $pink;
       }
     }
 
@@ -1710,11 +1734,11 @@ abbr {
       flex-direction: row;
       flex-wrap: wrap;
       justify-content: space-between;
-      margin-bottom: 1 + .25rem;
+      margin-bottom: 1 + 0.25rem;
       margin-top: 1rem;
 
       svg {
-        margin-right: .5rem;
+        margin-right: 0.5rem;
       }
 
       .last-updated {
@@ -1732,7 +1756,7 @@ abbr {
         cursor: pointer;
         display: flex;
         flex-direction: row;
-        padding: .75rem;
+        padding: 0.75rem;
 
         p {
           align-self: flex-end;
@@ -1755,7 +1779,7 @@ abbr {
         border-radius: 5px;
         color: $brick;
         margin: auto;
-        padding: 1rem .25rem;
+        padding: 1rem 0.25rem;
         text-align: center;
         width: 16rem;
 
@@ -1809,8 +1833,8 @@ abbr {
       color: $gray;
       display: flex;
       flex-direction: row;
-      margin-bottom: .25rem;
-      padding: .5rem;
+      margin-bottom: 0.25rem;
+      padding: 0.5rem;
       position: relative;
 
       &:not(:first-child) {
@@ -1844,8 +1868,8 @@ abbr {
 
       .sort-icon {
         left: 0;
-        margin-left: .25rem;
-        margin-right: .25rem;
+        margin-left: 0.25rem;
+        margin-right: 0.25rem;
         position: absolute;
         top: 0;
 
@@ -1879,8 +1903,14 @@ abbr {
           }
         }
 
+        &.is-vaccinated {
+          svg {
+            color: $pink;
+          }
+        }
+
         &.invert {
-          margin-top: .25rem;
+          margin-top: 0.25rem;
           transform: rotate(180deg);
         }
       }
@@ -1914,6 +1944,10 @@ abbr {
         .is-tested {
           color: $purple;
         }
+
+        .is-vaccinated {
+          color: $pink;
+        }
       }
 
       &:not(:last-child) {
@@ -1924,7 +1958,7 @@ abbr {
         background: $gray-light-opaque;
         font-size: 13px;
         font-weight: 900;
-        padding: 1.25rem .5rem .75rem;
+        padding: 1.25rem 0.5rem 0.75rem;
 
         &:hover {
           background: $gray-hover-opaque !important;
@@ -1946,7 +1980,7 @@ abbr {
 
     .spacer {
       color: $gray-mid;
-      margin-bottom: 1 + .25rem;
+      margin-bottom: 1 + 0.25rem;
       margin-top: 1rem;
       text-align: center;
 
@@ -2248,11 +2282,11 @@ abbr {
       }
 
       .switch-type,
-      .switch-statistic, {
+      .switch-statistic {
         display: flex;
         flex-direction: row;
         justify-content: flex-end;
-        margin-bottom: .25rem;
+        margin-bottom: 0.25rem;
 
         div {
           align-items: center;
@@ -2279,7 +2313,7 @@ abbr {
           }
 
           &:not(:last-child) {
-            margin-right: .25rem;
+            margin-right: 0.25rem;
           }
 
           svg {
@@ -2304,8 +2338,8 @@ abbr {
           display: flex;
           flex-direction: row;
           height: 1.25rem;
-          margin-bottom: .25rem;
-          margin-left: .65rem !important;
+          margin-bottom: 0.25rem;
+          margin-left: 0.65rem !important;
           width: 1.25rem;
 
           span {
@@ -2569,7 +2603,6 @@ abbr {
       select {
         appearance: none;
         background-color: #eee;
-
         background-image: url('data:image/svg+xml,<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg"><path d="m0,6l12,12l12,-12l-24,0z" fill="gray"/><path fill="none" d="m0,0l24,0l0,24l-24,0l0,-24z"/></svg>');
         background-position-x: calc(100% - 0.4rem);
         background-position-y: 50%;
@@ -2617,47 +2650,71 @@ abbr {
   width: 100%;
 
   .svg-parent {
-    height: 10rem;
+    height: 12rem;
     margin-bottom: 1rem;
 
     &.is-confirmed {
-      line {
-        &.stem {
-          stroke: $cherry-mid;
-        }
+      .stem {
+        stroke: $cherry-mid;
+      }
+
+      .trend-area {
+        fill: $cherry-mid;
       }
     }
 
     &.is-active {
-      line {
-        &.stem {
-          stroke: $blue-mid;
-        }
+      .stem {
+        stroke: $blue-mid;
+      }
+
+      .trend-area {
+        fill: $blue-mid;
       }
     }
 
     &.is-recovered {
-      line {
-        &.stem {
-          stroke: $green-mid;
-        }
+      .stem {
+        stroke: $green-mid;
+      }
+
+      .trend-area {
+        fill: $green-mid;
       }
     }
 
     &.is-deceased {
-      line {
-        &.stem {
-          stroke: $gray-mid;
-        }
+      .stem {
+        stroke: $gray-mid;
+      }
+
+      .trend-area {
+        fill: $gray-mid;
       }
     }
 
     &.is-tested {
-      line {
-        &.stem {
-          stroke: $purple-mid;
-        }
+      .stem {
+        stroke: $purple-mid;
       }
+
+      .trend-area {
+        fill: $purple-mid;
+      }
+    }
+
+    &.is-vaccinated {
+      .stem {
+        stroke: $pink-mid;
+      }
+
+      .trend-area {
+        fill: $pink-mid;
+      }
+    }
+
+    &.is-brush {
+      height: 4rem;
     }
   }
 }
@@ -2674,15 +2731,42 @@ abbr {
     text-align: center;
   }
 
-  .scale-modes {
-    align-items: flex-end;
-    bottom: 0;
-    color: $gray;
+  .timeseries-options {
     display: flex;
     flex-direction: row;
+    justify-content: space-between;
     margin-top: 1rem;
-    right: 0;
-    z-index: 99;
+
+    .timeseries-mode {
+      display: flex;
+      flex-direction: row;
+    }
+
+    .scale-modes {
+      align-items: flex-end;
+      bottom: 0;
+      color: $gray;
+      display: flex;
+      flex-direction: row;
+      right: 0;
+      z-index: 99;
+
+      &:hover {
+        label {
+          &.main {
+            color: $gray;
+          }
+        }
+      }
+
+      .timeseries-mode {
+        margin-left: 1rem;
+      }
+
+      & > * {
+        align-self: center;
+      }
+    }
 
     label {
       color: $gray-mid;
@@ -2691,25 +2775,6 @@ abbr {
       margin-right: 0.25rem;
       z-index: 99;
     }
-
-    &:hover {
-      label {
-        &.main {
-          color: $gray;
-        }
-      }
-    }
-
-    & > * {
-      align-self: center;
-    }
-  }
-
-  .timeseries-mode,
-  .timeseries-logmode {
-    display: flex;
-    flex-direction: row;
-    margin-left: 1rem;
   }
 }
 
@@ -2783,25 +2848,6 @@ input {
     position: absolute;
     top: 0.5rem;
 
-    h2,
-    h5,
-    h6 {
-      color: $cherry-mid;
-      margin: 0;
-      transition: all 0.15s ease-in-out;
-    }
-
-    h5 {
-      &.title {
-        color: $cherry-mid;
-      }
-    }
-
-    h2,
-    h6 {
-      color: $cherry;
-    }
-
     .stats-bottom {
       display: flex;
       flex-direction: row;
@@ -2814,6 +2860,26 @@ input {
       & > * {
         margin-top: auto;
       }
+    }
+
+    h2,
+    h5,
+    h6 {
+      margin: 0;
+      transition: all 0.15s ease-in-out;
+    }
+
+    h5 {
+      color: $cherry-mid;
+
+      &.title {
+        color: $cherry-mid;
+      }
+    }
+
+    h2,
+    h6 {
+      color: $cherry;
     }
 
     &.is-recovered {
@@ -2875,11 +2941,25 @@ input {
         color: $purple;
       }
     }
+
+    &.is-vaccinated {
+      h5 {
+        color: $pink-mid;
+
+        &.title {
+          color: $pink-mid;
+        }
+      }
+
+      h2,
+      h6 {
+        color: $pink;
+      }
+    }
   }
 
   .svg-parent {
     align-self: center;
-    background: $cherry-light;
     border-radius: 5px;
     display: flex;
     position: relative;
@@ -2890,20 +2970,33 @@ input {
 
       .domain,
       .tick {
-        stroke: $cherry;
         stroke-width: 1.5;
 
         line {
-          stroke: $cherry;
           stroke-width: 1.5;
         }
       }
 
       text {
-        color: $cherry-mid;
         font-size: 9px;
         font-weight: 600;
         stroke: transparent;
+      }
+    }
+
+    &.is-confirmed {
+      background: $cherry-light;
+
+      svg {
+        .domain,
+        .tick,
+        line {
+          stroke: $cherry;
+        }
+
+        text {
+          color: $cherry-mid;
+        }
       }
     }
 
@@ -2919,7 +3012,6 @@ input {
 
         text {
           color: $green-mid;
-          stroke: transparent;
         }
       }
     }
@@ -2936,7 +3028,6 @@ input {
 
         text {
           color: $gray-mid;
-          stroke: transparent;
         }
       }
     }
@@ -2953,7 +3044,6 @@ input {
 
         text {
           color: $blue-mid;
-          stroke: transparent;
         }
       }
     }
@@ -2970,7 +3060,40 @@ input {
 
         text {
           color: $purple-mid;
-          stroke: transparent;
+        }
+      }
+    }
+
+    &.is-vaccinated {
+      background: $pink-light;
+
+      svg {
+        .domain,
+        .tick,
+        line {
+          stroke: $pink;
+        }
+
+        text {
+          color: $pink-mid;
+        }
+      }
+    }
+
+    &.is-brush {
+      .overlay {
+        fill: $gray-hover;
+      }
+
+      svg {
+        .domain,
+        .tick,
+        line {
+          stroke: $gray;
+        }
+
+        text {
+          color: $gray;
         }
       }
     }
@@ -3084,8 +3207,8 @@ footer {
   }
 
   svg {
-    margin-right: .5rem;
-    padding: .25rem;
+    margin-right: 0.5rem;
+    padding: 0.25rem;
   }
 
   .telegram {
@@ -3263,7 +3386,7 @@ footer {
   h4 {
     color: $blue-mid;
     font-weight: 900;
-    margin-top: .5rem;
+    margin-top: 0.5rem;
 
     &:hover {
       color: $blue;
@@ -3271,7 +3394,7 @@ footer {
 
     svg {
       height: 1rem;
-      margin-bottom: -.25rem;
+      margin-bottom: -0.25rem;
     }
   }
 }
@@ -3614,7 +3737,7 @@ footer {
     justify-content: flex-end;
     max-width: 30vw;
     min-width: 10rem;
-    padding: .5rem;
+    padding: 0.5rem;
     pointer-events: none;
     right: 0;
     top: 0;
@@ -3643,7 +3766,7 @@ footer {
     z-index: 999;
 
     .navbar-left {
-      margin-bottom: .5rem;
+      margin-bottom: 0.5rem;
       margin-top: auto;
       order: 3;
       text-align: center;
@@ -3677,7 +3800,7 @@ footer {
         margin-top: 1.5rem;
 
         &:hover {
-          color: $gray-mid;
+          color: $pblue-mid;
         }
       }
     }
@@ -3765,7 +3888,7 @@ footer {
   }
 
   .Home,
-  .State, {
+  .State {
     display: flex;
     flex-direction: column;
     margin-left: 0;
@@ -3786,7 +3909,7 @@ footer {
 
   .Level {
     h1 {
-      font-size: 5vw !important;
+      font-size: 3.75vw !important;
     }
   }
 
@@ -3857,7 +3980,7 @@ footer {
   }
 
   .cards-container {
-    padding: .5rem;
+    padding: 0.5rem;
 
     .cards {
       .card {
@@ -3955,10 +4078,6 @@ footer {
     }
   }
 
-  &.nationality {
-    margin-bottom: 0.5rem;
-  }
-
   .Navbar {
     .expand {
       height: calc(100% - 4rem);
@@ -4024,6 +4143,21 @@ footer {
 
   .LanguageSwitcher {
     margin-left: 0;
+  }
+
+  .LevelVaccinated {
+    margin-bottom: 3rem !important;
+    margin-top: 2rem !important;
+  }
+
+  .timeseries-header {
+    .timeseries-options {
+      flex-direction: column;
+
+      .moving-average {
+        margin-top: 0.75rem;
+      }
+    }
   }
 }
 
@@ -4232,6 +4366,10 @@ footer {
           .trend,
           line {
             stroke: #9673b999 !important;
+          }
+
+          .trend-area {
+            fill: #9673b999 !important;
           }
 
           text {
