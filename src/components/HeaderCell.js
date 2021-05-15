@@ -3,7 +3,7 @@ import Tooltip from './Tooltip';
 import {STATISTIC_CONFIGS} from '../constants';
 import {toTitleCase} from '../utils/commonFunctions';
 
-import {FilterIcon, InfoIcon} from '@primer/octicons-v2-react';
+import {FilterIcon, InfoIcon} from '@primer/octicons-react';
 import classnames from 'classnames';
 import equal from 'fast-deep-equal';
 import produce from 'immer';
@@ -41,7 +41,14 @@ function StateHeaderCell({handleSort, sortData, setSortData, statistic}) {
           <FilterIcon size={10} />
         </div>
       )}
-      <div>{t(toTitleCase(STATISTIC_CONFIGS[statistic].displayName))}</div>
+      <div>
+        {t(
+          toTitleCase(
+            STATISTIC_CONFIGS[statistic]?.tableConfig?.displayName ||
+              STATISTIC_CONFIGS[statistic].displayName
+          )
+        )}
+      </div>
       {statistic === 'other' && (
         <Tooltip data={'Migrated cases or non-COVID deaths'}>
           <InfoIcon size={14} />

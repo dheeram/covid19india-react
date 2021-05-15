@@ -11,7 +11,11 @@ import {
   TABLE_STATISTICS_EXPANDED,
   UNASSIGNED_STATE_CODE,
 } from '../constants';
-import {getTableStatistic, parseIndiaDate} from '../utils/commonFunctions';
+import {
+  getTableStatistic,
+  parseIndiaDate,
+  retry,
+} from '../utils/commonFunctions';
 
 import {
   FilterIcon,
@@ -19,12 +23,18 @@ import {
   InfoIcon,
   OrganizationIcon,
   QuestionIcon,
-} from '@primer/octicons-v2-react';
+} from '@primer/octicons-react';
 import classnames from 'classnames';
 import {max} from 'date-fns';
 import equal from 'fast-deep-equal';
 import produce from 'immer';
 import {memo, useCallback, useEffect, useMemo, useState, lazy} from 'react';
+import {
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronRight,
+  ChevronsRight,
+} from 'react-feather';
 import {useTranslation} from 'react-i18next';
 import {Link} from 'react-router-dom';
 import {useTrail, useTransition, animated, config} from 'react-spring';
@@ -32,7 +42,7 @@ import {useSessionStorage} from 'react-use';
 // eslint-disable-next-line
 import worker from 'workerize-loader!../workers/getDistricts';
 
-const Row = lazy(() => import('./Row'));
+const Row = lazy(() => retry(() => import('./Row')));
 
 function Table({
   data: states,
@@ -41,6 +51,8 @@ function Table({
   setRegionHighlighted,
   expandTable,
   setExpandTable,
+  hideDistrictData,
+  hideVaccinated,
 }) {
   const {t} = useTranslation();
   const [sortData, setSortData] = useSessionStorage('sortData', {
@@ -48,6 +60,7 @@ function Table({
     isAscending: false,
     delta: false,
   });
+  const [page, setPage] = useState(0);
 
   const handleSortClick = useCallback(
     (statistic) => {
@@ -80,6 +93,10 @@ function Table({
   const [isPerMillion, setIsPerMillion] = useState(false);
   const [isInfoVisible, setIsInfoVisible] = useState(false);
 
+  const numPages = Math.ceil(
+    Object.keys(districts || {}).length / DISTRICT_TABLE_COUNT
+  );
+
   const lastUpdatedTT = useMemo(() => {
     const updatedDates = [
       states['TT']?.meta?.['last_updated'] || timelineDate,
@@ -95,7 +112,7 @@ function Table({
       if (sortData.sortColumn !== 'regionName') {
         const statisticConfig = STATISTIC_CONFIGS[sortData.sortColumn];
         const dataType =
-          sortData.delta && !statisticConfig.hideDelta ? 'delta' : 'total';
+          sortData.delta && statisticConfig.showDelta ? 'delta' : 'total';
 
         const statisticA = getTableStatistic(
           districts?.[regionKeyA] || states[regionKeyA],
@@ -150,22 +167,43 @@ function Table({
     });
   }, [tableOption, states]);
 
-  const transition = useTransition(isInfoVisible, null, {
+  useEffect(() => {
+    setPage((p) => Math.max(0, Math.min(p, numPages - 1)));
+  }, [numPages]);
+
+  const handlePageClick = (direction) => {
+    if (Math.abs(direction) === 1) {
+      setPage(Math.min(Math.max(0, page + direction), numPages - 1));
+    } else if (direction < 0) {
+      setPage(0);
+    } else if (direction > 0) {
+      setPage(numPages - 1);
+    }
+  };
+
+  const transition = useTransition(isInfoVisible, {
     from: TABLE_FADE_OUT,
     enter: TABLE_FADE_IN,
     leave: TABLE_FADE_OUT,
   });
 
-  const tableStatistics = expandTable
+  const tableStatistics = (expandTable
     ? TABLE_STATISTICS_EXPANDED
-    : TABLE_STATISTICS;
+    : TABLE_STATISTICS
+  ).filter((statistic) => statistic !== 'vaccinated' || !hideVaccinated);
+
+  const showDistricts = tableOption === 'Districts' && !hideDistrictData;
+
+  useEffect(() => {
+    if (!showDistricts) setPage(0);
+  }, [showDistricts]);
 
   return (
-    <>
+    <div className="Table">
       <div className="table-top">
         <animated.div
           className={classnames('option-toggle', {
-            'is-highlighted': tableOption === 'Districts',
+            'is-highlighted': showDistricts,
           })}
           onClick={_setTableOption}
           style={trail[0]}
@@ -204,80 +242,81 @@ function Table({
         </animated.div>
       </div>
 
-      {transition.map(({item, key, props}) =>
-        item ? (
-          <animated.div key={key} className="table-helper" style={props}>
-            <div className="helper-top">
-              <div className="helper-left">
-                <div className="info-item">
-                  <span>
-                    <OrganizationIcon size={14} />
-                  </span>
-                  <p>{`Toggle between States/Districts`}</p>
-                </div>
+      {transition(
+        (style, item) =>
+          item && (
+            <animated.div className="table-helper" {...{style}}>
+              <div className="helper-top">
+                <div className="helper-left">
+                  <div className="info-item">
+                    <span>
+                      <OrganizationIcon size={14} />
+                    </span>
+                    <p>{t('Toggle between States/Districts')}</p>
+                  </div>
 
-                <div className="info-item">
-                  <h5>10L</h5>
-                  <p>Per Ten Lakh People</p>
-                </div>
+                  <div className="info-item">
+                    <h5>10L</h5>
+                    <p>{t('Per Ten Lakh People')}</p>
+                  </div>
 
-                <div className="info-item sort">
-                  <span>
-                    <FilterIcon size={14} />
-                  </span>
-                  <p>Sort by Descending</p>
-                </div>
+                  <div className="info-item sort">
+                    <span>
+                      <FilterIcon size={14} />
+                    </span>
+                    <p>{t('Sort by Descending')}</p>
+                  </div>
 
-                <div className="info-item sort invert">
-                  <span>
-                    <FilterIcon size={14} />
-                  </span>
-                  <p>Sort by Ascending</p>
-                </div>
+                  <div className="info-item sort invert">
+                    <span>
+                      <FilterIcon size={14} />
+                    </span>
+                    <p>{t('Sort by Ascending')}</p>
+                  </div>
 
-                <div className="info-item sort">
-                  <TableDeltaHelper />
-                </div>
+                  <div className="info-item sort">
+                    <TableDeltaHelper />
+                  </div>
 
-                <div className="info-item notes">
-                  <span>
-                    <InfoIcon size={15} />
-                  </span>
-                  <p>Notes</p>
+                  <div className="info-item notes">
+                    <span>
+                      <InfoIcon size={15} />
+                    </span>
+                    <p>{t('Notes')}</p>
+                  </div>
+                </div>
+                <div className="helper-right">
+                  <div className="info-item">
+                    <p>{t('Units')}</p>
+                  </div>
+                  {Object.entries({'1K': 3, '1L': 5, '1Cr': 7}).map(
+                    ([abbr, exp]) => (
+                      <div className="info-item" key={abbr}>
+                        <h5>{abbr}</h5>
+                        <p>
+                          10
+                          <sup
+                            style={{
+                              verticalAlign: 'baseline',
+                              position: 'relative',
+                              top: '-.4em',
+                            }}
+                          >
+                            {exp}
+                          </sup>
+                        </p>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
-              <div className="helper-right">
-                <div className="info-item">
-                  <p>Units</p>
-                </div>
-                {Object.entries({'1K': 3, '1L': 5, '1Cr': 7}).map(
-                  ([abbr, exp]) => (
-                    <div className="info-item" key={abbr}>
-                      <h5>{abbr}</h5>
-                      <p>
-                        10
-                        <sup
-                          style={{
-                            verticalAlign: 'baseline',
-                            position: 'relative',
-                            top: '-.4em',
-                          }}
-                        >
-                          {exp}
-                        </sup>
-                      </p>
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
 
-            <h5 className="text">
-              {t('Compiled from State Govt. numbers')},{' '}
-              <Link to="/about">{t('know more')}!</Link>
-            </h5>
-          </animated.div>
-        ) : null
+              <h5 className="text">
+                {t('Compiled from State Govt. numbers')},{' '}
+                <Link to="/about">{t('know more')}!</Link>
+              </h5>
+            </animated.div>
+          )
       )}
 
       <div className="table-container">
@@ -292,7 +331,7 @@ function Table({
               className="cell heading"
               onClick={handleSortClick.bind(this, 'regionName')}
             >
-              <div>{t(tableOption === 'States' ? 'State/UT' : 'District')}</div>
+              <div>{t(!showDistricts ? 'State/UT' : 'District')}</div>
               {sortData.sortColumn === 'regionName' && (
                 <div
                   className={classnames('sort-icon', {
@@ -313,7 +352,7 @@ function Table({
             ))}
           </div>
 
-          {tableOption === 'States' &&
+          {!showDistricts &&
             Object.keys(states)
               .filter(
                 (stateCode) =>
@@ -333,18 +372,22 @@ function Table({
                       setRegionHighlighted,
                       expandTable,
                       lastUpdatedTT,
+                      tableStatistics,
                     }}
                   />
                 );
               })}
 
-          {tableOption === 'Districts' && !districts && <TableLoader />}
+          {showDistricts && !districts && <TableLoader />}
 
-          {tableOption === 'Districts' &&
+          {showDistricts &&
             districts &&
             Object.keys(districts)
               .sort((a, b) => sortingFunction(a, b))
-              .slice(0, DISTRICT_TABLE_COUNT)
+              .slice(
+                page * DISTRICT_TABLE_COUNT,
+                (page + 1) * DISTRICT_TABLE_COUNT
+              )
               .map((districtKey) => {
                 return (
                   <Row
@@ -357,6 +400,7 @@ function Table({
                       setRegionHighlighted,
                       expandTable,
                       lastUpdatedTT,
+                      tableStatistics,
                     }}
                   />
                 );
@@ -372,11 +416,41 @@ function Table({
               setRegionHighlighted,
               expandTable,
               lastUpdatedTT,
+              tableStatistics,
             }}
           />
         </div>
       </div>
-    </>
+      {showDistricts && (
+        <div className="paginate">
+          <div
+            className={classnames('left', {disabled: page === 0})}
+            onClick={handlePageClick.bind(this, -2)}
+          >
+            <ChevronsLeft size={16} />
+          </div>
+          <div
+            className={classnames('left', {disabled: page === 0})}
+            onClick={handlePageClick.bind(this, -1)}
+          >
+            <ChevronLeft size={16} />
+          </div>
+          <h5>{`${page + 1} / ${numPages}`}</h5>
+          <div
+            className={classnames('right', {disabled: page === numPages - 1})}
+            onClick={handlePageClick.bind(this, 1)}
+          >
+            <ChevronRight size={16} />
+          </div>
+          <div
+            className={classnames('right', {disabled: page === numPages - 1})}
+            onClick={handlePageClick.bind(this, 2)}
+          >
+            <ChevronsRight size={16} />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -396,6 +470,9 @@ const isEqual = (prevProps, currProps) => {
   ) {
     return false;
   } else if (!equal(prevProps.date, currProps.date)) {
+    return false;
+  } else if (!equal(prevProps.hideDistrictData, currProps.hideDistrictData)) {
+  } else if (!equal(prevProps.hideVaccinated, currProps.hideVaccinated)) {
     return false;
   } else if (
     !equal(

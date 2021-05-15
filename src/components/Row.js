@@ -6,8 +6,6 @@ import Tooltip from './Tooltip';
 import {
   STATE_NAMES,
   STATISTIC_CONFIGS,
-  TABLE_STATISTICS,
-  TABLE_STATISTICS_EXPANDED,
   UNKNOWN_DISTRICT_KEY,
 } from '../constants';
 import {
@@ -23,7 +21,7 @@ import {
   FoldUpIcon,
   GraphIcon,
   InfoIcon,
-} from '@primer/octicons-v2-react';
+} from '@primer/octicons-react';
 import classnames from 'classnames';
 import equal from 'fast-deep-equal';
 import produce from 'immer';
@@ -34,6 +32,7 @@ import {useSessionStorage} from 'react-use';
 
 function Row({
   data,
+  tableStatistics,
   stateCode,
   districtName,
   isPerMillion,
@@ -71,7 +70,7 @@ function Row({
       if (sortData.sortColumn !== 'districtName') {
         const statisticConfig = STATISTIC_CONFIGS[sortData.sortColumn];
         const dataType =
-          sortData.delta && !statisticConfig.hideDelta ? 'delta' : 'total';
+          sortData.delta && statisticConfig.showDelta ? 'delta' : 'total';
 
         const statisticA = getTableStatistic(
           data.districts[districtNameA],
@@ -154,10 +153,6 @@ function Row({
       block: 'start',
     });
   }, []);
-
-  const tableStatistics = expandTable
-    ? TABLE_STATISTICS_EXPANDED
-    : TABLE_STATISTICS;
 
   return (
     <>
@@ -269,6 +264,7 @@ function Row({
               data={data.districts[districtName]}
               key={districtName}
               {...{
+                tableStatistics,
                 districtName,
                 regionHighlighted,
                 setRegionHighlighted,
@@ -323,6 +319,8 @@ const isEqual = (prevProps, currProps) => {
   ) {
     return false;
   } else if (!equal(prevProps.expandTable, currProps.expandTable)) {
+    return false;
+  } else if (!equal(prevProps.tableStatistics, currProps.tableStatistics)) {
     return false;
   } else return true;
 };

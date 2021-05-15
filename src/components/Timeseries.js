@@ -3,9 +3,7 @@ import {
   NAN_STATISTICS,
   PRIMARY_STATISTICS,
   STATISTIC_CONFIGS,
-  TIMESERIES_STATISTICS,
 } from '../constants';
-import {useResizeObserver} from '../hooks/useResizeObserver';
 import {
   capitalize,
   formatNumber,
@@ -26,6 +24,7 @@ import {differenceInDays} from 'date-fns';
 import equal from 'fast-deep-equal';
 import {memo, useCallback, useEffect, useRef, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useMeasure} from 'react-use';
 
 // Chart margins
 const margin = {top: 15, right: 35, bottom: 25, left: 25};
@@ -34,6 +33,7 @@ const yScaleShrinkFactor = 0.7;
 const numTicksX = (width) => (width < 480 ? 4 : 6);
 
 function Timeseries({
+  statistics,
   timeseries,
   dates,
   endDate,
@@ -44,24 +44,7 @@ function Timeseries({
 }) {
   const {t} = useTranslation();
   const refs = useRef([]);
-
-  const wrapperRef = useRef();
-  const dimensions = useResizeObserver(wrapperRef);
-
-  const statistics = useMemo(
-    () =>
-      TIMESERIES_STATISTICS.filter(
-        (statistic) => chartType === 'delta' || statistic !== 'tpr'
-      ),
-    [chartType]
-  );
-
-  // Dimensions
-  const {width, height} = dimensions ||
-    wrapperRef.current?.getBoundingClientRect() || {
-      width: margin.left + margin.right,
-      height: margin.bottom + margin.top,
-    };
+  const [wrapperRef, {width, height}] = useMeasure();
 
   const [highlightedDate, setHighlightedDate] = useState(
     dates[dates.length - 1]
@@ -224,6 +207,8 @@ function Timeseries({
   ]);
 
   useEffect(() => {
+    if (!width || !height) return;
+
     const T = dates.length;
     // Chart extremes
     const chartRight = width - margin.right;
@@ -240,7 +225,7 @@ function Timeseries({
       g.attr('class', 'x-axis2')
         .call(axisBottom(xScale).tickValues([]).tickSize(0))
         .select('.domain')
-        .style('transform', `translateY(${yScale(0)}px)`);
+        .style('transform', `translate3d(0, ${yScale(0)}px, 0)`);
 
       if (yScale(0) !== chartBottom) g.select('.domain').attr('opacity', 0.4);
       else g.select('.domain').attr('opacity', 0);
@@ -288,7 +273,7 @@ function Timeseries({
       /* X axis */
       svg
         .select('.x-axis')
-        .style('transform', `translateY(${chartBottom}px)`)
+        .style('transform', `translate3d(0, ${chartBottom}px, 0)`)
         .transition(t)
         .call(xAxis);
 
@@ -297,7 +282,7 @@ function Timeseries({
       /* Y axis */
       svg
         .select('.y-axis')
-        .style('transform', `translateX(${chartRight}px)`)
+        .style('transform', `translate3d(${chartRight}px, 0, 0)`)
         .transition(t)
         .call(yAxis, yScale, format);
 
@@ -342,142 +327,117 @@ function Timeseries({
             allZero
               ? yScale(0)
               : (date) =>
-                  yScale(
-                    getStatistic(timeseries[date], chartType, statistic, {
-                      movingAverage: isMovingAverage,
-                    })
-                  )
+                  yScale(getStatistic(timeseries[date], chartType, statistic))
           )(dates);
 
-      if (isDiscrete) {
-        /* DAILY TRENDS */
-        svg.selectAll('.trend').remove();
-
-        if (condenseChart) {
-          svg
-            .selectAll('.stem')
-            .transition(t)
-            .attr('y1', yScale(0))
-            .attr('y2', yScale(0))
-            .remove();
-
-          svg
-            .selectAll('.trend-area')
-            .data(T ? [dates] : [])
-            .join(
-              (enter) =>
+      svg
+        .selectAll('.trend-area')
+        .data(T && chartType === 'delta' && condenseChart ? [dates] : [])
+        .join(
+          (enter) =>
+            enter
+              .append('path')
+              .attr('class', 'trend-area')
+              .call((enter) =>
                 enter
-                  .append('path')
-                  .attr('class', 'trend-area')
-                  .call((enter) =>
-                    enter
-                      .attr('d', (dates) => areaPath(dates, true))
-                      .transition(t)
-                      .attr('d', areaPath)
-                  ),
-              (update) =>
-                update.call((update) =>
-                  update.transition(t).attrTween('d', function (dates) {
-                    const previous = select(this).attr('d');
-                    const current = areaPath(dates);
-                    return interpolatePath(previous, current);
-                  })
-                )
-            );
-        } else {
-          svg
-            .selectAll('.trend-area')
-            .transition(t)
-            .attr('d', (dates) => areaPath(dates, true))
-            .remove();
-
-          svg
-            .selectAll('.stem')
-            .data(dates, (date) => date)
-            .join(
-              (enter) =>
-                enter
-                  .append('line')
-                  .attr('class', 'stem')
-                  .attr('stroke-width', 4)
-                  .attr('x1', (date) => xScale(parseIndiaDate(date)))
-                  .attr('y1', yScale(0))
-                  .attr('x2', (date) => xScale(parseIndiaDate(date)))
-                  .attr('y2', yScale(0)),
-              (update) => update,
-              (exit) =>
-                exit.call((exit) =>
-                  exit
-                    .transition(t)
-                    .attr('x1', (date) => xScale(parseIndiaDate(date)))
-                    .attr('x2', (date) => xScale(parseIndiaDate(date)))
-                    .attr('y2', yScale(0))
-                    .remove()
-                )
-            )
-            .transition(t)
-            .attr('x1', (date) => xScale(parseIndiaDate(date)))
-            .attr('y1', yScale(0))
-            .attr('x2', (date) => xScale(parseIndiaDate(date)))
-            .attr('y2', (date) =>
-              yScale(
-                getStatistic(timeseries[date], chartType, statistic, {
-                  movingAverage: isMovingAverage,
-                })
-              )
-            );
-        }
-      } else {
-        svg
-          .selectAll('.stem')
-          .transition(t)
-          .attr('y1', yScale(0))
-          .attr('y2', yScale(0))
-          .remove();
-
-        svg
-          .selectAll('.trend-area')
-          .transition(t)
-          .attr('d', (dates) => areaPath(dates, true))
-          .remove();
-
-        const linePath = line()
-          .curve(curveMonotoneX)
-          .x((date) => xScale(parseIndiaDate(date)))
-          .y((date) =>
-            yScale(
-              getStatistic(timeseries[date], chartType, statistic, {
-                movingAverage: isMovingAverage,
-              })
-            )
-          );
-
-        svg
-          .selectAll('.trend')
-          .data(T ? [dates] : [])
-          .join(
-            (enter) =>
-              enter
-                .append('path')
-                .attr('class', 'trend')
-                .attr('fill', 'none')
-                .attr('stroke-width', 4)
-                .attr('d', linePath)
-                .call((enter) => enter.transition(t).attr('opacity', 1)),
-            (update) =>
-              update.call((update) =>
-                update
-                  .attr('opacity', 1)
+                  .attr('d', (dates) => areaPath(dates, true))
                   .transition(t)
-                  .attrTween('d', function (date) {
-                    const previous = select(this).attr('d');
-                    const current = linePath(date);
-                    return interpolatePath(previous, current);
-                  })
-              )
+                  .attr('d', areaPath)
+              ),
+          (update) =>
+            update.call((update) =>
+              update.transition(t).attrTween('d', function (dates) {
+                const previous = select(this).attr('d');
+                const current = areaPath(dates);
+                return interpolatePath(previous, current);
+              })
+            ),
+          (exit) =>
+            exit.call((exit) =>
+              exit
+                .transition(t)
+                .attr('d', (dates) => areaPath(dates, true))
+                .remove()
+            )
+        )
+        .transition(t)
+        .attr('opacity', isMovingAverage ? 0.3 : 1);
+
+      svg
+        .selectAll('.stem')
+        .data(
+          T && chartType === 'delta' && !condenseChart ? dates : [],
+          (date) => date
+        )
+        .join(
+          (enter) =>
+            enter
+              .append('line')
+              .attr('class', 'stem')
+              .attr('stroke-width', 4)
+              .attr('x1', (date) => xScale(parseIndiaDate(date)))
+              .attr('y1', yScale(0))
+              .attr('x2', (date) => xScale(parseIndiaDate(date)))
+              .attr('y2', yScale(0)),
+          (update) => update,
+          (exit) =>
+            exit.call((exit) =>
+              exit
+                .transition(t)
+                .attr('x1', (date) => xScale(parseIndiaDate(date)))
+                .attr('x2', (date) => xScale(parseIndiaDate(date)))
+                .attr('y1', yScale(0))
+                .attr('y2', yScale(0))
+                .remove()
+            )
+        )
+        .transition(t)
+        .attr('x1', (date) => xScale(parseIndiaDate(date)))
+        .attr('y1', yScale(0))
+        .attr('x2', (date) => xScale(parseIndiaDate(date)))
+        .attr('y2', (date) =>
+          yScale(getStatistic(timeseries[date], chartType, statistic))
+        )
+        .attr('opacity', isMovingAverage ? 0.2 : 1);
+
+      const linePath = line()
+        .curve(curveMonotoneX)
+        .x((date) => xScale(parseIndiaDate(date)))
+        .y((date) =>
+          yScale(
+            getStatistic(timeseries[date], chartType, statistic, {
+              movingAverage: isMovingAverage,
+            })
           )
-          .attr('stroke', color + (condenseChart ? '99' : '50'));
-      }
+        );
+
+      svg
+        .selectAll('.trend')
+        .data(T && (chartType === 'total' || isMovingAverage) ? [dates] : [])
+        .join(
+          (enter) =>
+            enter
+              .append('path')
+              .attr('class', 'trend')
+              .attr('fill', 'none')
+              .attr('stroke-width', 4)
+              .attr('d', linePath)
+              .call((enter) => enter.transition(t).attr('opacity', 1)),
+          (update) =>
+            update.call((update) =>
+              update
+                .attr('opacity', 1)
+                .transition(t)
+                .attrTween('d', function (date) {
+                  const previous = select(this).attr('d');
+                  const current = linePath(date);
+                  return interpolatePath(previous, current);
+                })
+            ),
+          (exit) =>
+            exit.call((exit) => exit.transition(t).attr('opacity', 0).remove())
+        )
+        .attr('stroke', color + (condenseChart ? '99' : '50'));
 
       svg.selectAll('*').attr('pointer-events', 'none');
       svg
@@ -674,6 +634,8 @@ const isEqual = (prevProps, currProps) => {
   ) {
     return false;
   } else if (!equal(currProps.endDate, prevProps.endDate)) {
+    return false;
+  } else if (!equal(currProps.statistics, prevProps.statistics)) {
     return false;
   } else if (!equal(currProps.dates, prevProps.dates)) {
     return false;

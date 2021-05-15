@@ -3,11 +3,10 @@ import {
   D3_TRANSITION_DURATION,
   STATISTIC_CONFIGS,
 } from '../constants';
-import {useResizeObserver} from '../hooks/useResizeObserver';
 import {getStatistic, parseIndiaDate} from '../utils/commonFunctions';
 
 import classnames from 'classnames';
-import {max} from 'd3-array';
+import {min, max} from 'd3-array';
 import {axisBottom} from 'd3-axis';
 import {brushX, brushSelection} from 'd3-brush';
 import {interpolatePath} from 'd3-interpolate-path';
@@ -15,34 +14,40 @@ import {scaleTime, scaleLinear} from 'd3-scale';
 import {select, pointers} from 'd3-selection';
 import {area, curveMonotoneX, stack} from 'd3-shape';
 import 'd3-transition';
-import {differenceInDays, formatISO} from 'date-fns';
+import {addDays, differenceInDays, formatISO} from 'date-fns';
 import equal from 'fast-deep-equal';
 import {memo, useCallback, useMemo, useEffect, useRef} from 'react';
 import ReactDOM from 'react-dom';
+import {useMeasure} from 'react-use';
 
 // Chart margins
 const margin = {top: 0, right: 35, bottom: 20, left: 25};
 const yBufferTop = 1.2;
 const numTicksX = (width) => (width < 480 ? 4 : 6);
+const brushWheelDelta = 10;
 
 function TimeseriesBrush({
   timeseries,
   dates,
-  brushDomain,
+  currentBrushSelection,
   endDate,
-  setBrushEnd,
+  lookback,
+  setBrushSelectionEnd,
   setLookback,
+  animationIndex,
 }) {
   const chartRef = useRef();
-  const wrapperRef = useRef();
-  const dimensions = useResizeObserver(wrapperRef);
+  const [wrapperRef, {width, height}] = useMeasure();
 
-  // Dimensions
-  const {width, height} = dimensions ||
-    wrapperRef.current?.getBoundingClientRect() || {
-      width: margin.left + margin.right,
-      height: margin.bottom + margin.top,
-    };
+  const endDateMin =
+    lookback !== null
+      ? min([
+          formatISO(addDays(parseIndiaDate(dates[0]), lookback), {
+            representation: 'date',
+          }),
+          endDate,
+        ])
+      : endDate;
 
   const xScale = useMemo(() => {
     const T = dates.length;
@@ -60,6 +65,8 @@ function TimeseriesBrush({
   }, [width, endDate, dates]);
 
   useEffect(() => {
+    if (!width || !height) return;
+
     // Chart extremes
     const chartBottom = height - margin.bottom;
 
@@ -68,10 +75,11 @@ function TimeseriesBrush({
         .attr('class', 'x-axis')
         .call(axisBottom(xScale).ticks(numTicksX(width)));
 
+    // Switched to daily confirmed instead of cumulative ARD
     const timeseriesStacked = stack()
       .keys(BRUSH_STATISTICS)
       .value((date, statistic) =>
-        Math.max(0, getStatistic(timeseries[date], 'total', statistic))
+        Math.max(0, getStatistic(timeseries[date], 'delta', statistic))
       )(dates);
 
     const yScale = scaleLinear()
@@ -86,12 +94,13 @@ function TimeseriesBrush({
       .range([chartBottom, margin.top]);
 
     const svg = select(chartRef.current);
+
     const t = svg.transition().duration(D3_TRANSITION_DURATION);
 
     svg
       .select('.x-axis')
       .attr('pointer-events', 'none')
-      .style('transform', `translateY(${chartBottom}px)`)
+      .style('transform', `translate3d(0, ${chartBottom}px, 0)`)
       .transition(t)
       .call(xAxis);
 
@@ -102,6 +111,7 @@ function TimeseriesBrush({
       .y1((d) => yScale(d[1]));
 
     svg
+      .select('.trend-areas')
       .selectAll('.trend-area')
       .data(timeseriesStacked)
       .join(
@@ -109,8 +119,9 @@ function TimeseriesBrush({
           enter
             .append('path')
             .attr('class', 'trend-area')
-            .attr('fill', ({key}) => STATISTIC_CONFIGS[key].color + '99')
-            .attr('stroke', 'none')
+            .attr('fill', ({key}) => STATISTIC_CONFIGS[key].color)
+            .attr('fill-opacity', 0.4)
+            .attr('stroke', ({key}) => STATISTIC_CONFIGS[key].color)
             .attr('d', areaPath)
             .attr('pointer-events', 'none'),
         (update) =>
@@ -125,74 +136,85 @@ function TimeseriesBrush({
       );
   }, [dates, width, height, xScale, timeseries]);
 
-  const defaultSelection = brushDomain.map((date) =>
+  const defaultSelection = currentBrushSelection.map((date) =>
     xScale(parseIndiaDate(date))
   );
 
-  const brushed = useCallback(
-    ({sourceEvent, selection}) => {
-      if (!sourceEvent) return;
-      // if (!selection) {
-      //   const [[cx]] = pointers(event);
-      //   selection = [cx, cx];
-      //   select(this).call(brush.move, [cx, cx]);
-      // }
-      const [brushStartDate, brushEndDate] = selection.map(xScale.invert);
-
-      ReactDOM.unstable_batchedUpdates(() => {
-        setBrushEnd(formatISO(brushEndDate, {representation: 'date'}));
-        setLookback(differenceInDays(brushEndDate, brushStartDate));
-      });
-    },
-    [xScale, setBrushEnd, setLookback]
-  );
-
-  useEffect(() => {
-    const svg = select(chartRef.current);
+  const brush = useMemo(() => {
+    if (!width || !height) return;
     // Chart extremes
     const chartRight = width - margin.right;
     const chartBottom = height - margin.bottom;
-
-    function beforebrushstarted(event) {
-      const selection = brushSelection(this.parentNode);
-      if (!selection) return;
-
-      const dx = selection[1] - selection[0];
-      const [[cx]] = pointers(event);
-      const [x0, x1] = [cx - dx / 2, cx + dx / 2];
-      const [X0, X1] = xScale.range();
-      select(this.parentNode).call(
-        brush.move,
-        x1 > X1 ? [X1 - dx, X1] : x0 < X0 ? [X0, X0 + dx] : [x0, x1]
-      );
-    }
-
-    function brushended({sourceEvent, selection}) {
-      if (!sourceEvent || !selection) return;
-      const domain = selection
-        .map(xScale.invert)
-        .map((date) => formatISO(date, {representation: 'date'}));
-
-      select(this)
-        .call(
-          brush.move,
-          domain.map((date) => xScale(parseIndiaDate(date)))
-        )
-        .call((g) => g.select('.overlay').attr('cursor', 'pointer'));
-    }
 
     const brush = brushX()
       .extent([
         [margin.left, margin.top],
         [chartRight, chartBottom],
       ])
-      .on('start brush', brushed)
-      .on('end', brushended);
+      .handleSize(20);
+    return brush;
+  }, [width, height]);
 
+  const brushed = useCallback(
+    ({sourceEvent, selection}) => {
+      if (!sourceEvent) return;
+      const [brushStartDate, brushEndDate] = selection.map(xScale.invert);
+
+      ReactDOM.unstable_batchedUpdates(() => {
+        setBrushSelectionEnd(formatISO(brushEndDate, {representation: 'date'}));
+        setLookback(differenceInDays(brushEndDate, brushStartDate));
+      });
+    },
+    [xScale, setBrushSelectionEnd, setLookback]
+  );
+
+  const beforebrushstarted = useCallback(
+    (event) => {
+      const svg = select(chartRef.current);
+      const selection = brushSelection(svg.select('.brush').node());
+
+      if (!selection) return;
+
+      const dx = selection[1] - selection[0];
+      const [[cx]] = pointers(event);
+      const [x0, x1] = [cx - dx / 2, cx + dx / 2];
+      const [X0, X1] = xScale.range();
+      svg
+        .select('.brush')
+        .call(
+          brush.move,
+          x1 > X1 ? [X1 - dx, X1] : x0 < X0 ? [X0, X0 + dx] : [x0, x1]
+        );
+    },
+    [brush, xScale]
+  );
+
+  const brushended = useCallback(
+    ({sourceEvent, selection}) => {
+      if (!sourceEvent || !selection) return;
+      const domain = selection
+        .map(xScale.invert)
+        .map((date) => formatISO(date, {representation: 'date'}));
+
+      const svg = select(chartRef.current);
+      svg
+        .select('.brush')
+        .call(
+          brush.move,
+          domain.map((date) => xScale(parseIndiaDate(date)))
+        )
+        .call((g) => g.select('.overlay').attr('cursor', 'pointer'));
+    },
+    [brush, xScale]
+  );
+
+  useEffect(() => {
+    if (!brush) return;
+    brush.on('start brush', brushed).on('end', brushended);
+    const svg = select(chartRef.current);
     svg
       .select('.brush')
       .call(brush)
-      .call(brush.move, defaultSelection)
       .call((g) =>
         g
           .select('.overlay')
@@ -200,16 +222,71 @@ function TimeseriesBrush({
           .datum({type: 'selection'})
           .on('mousedown touchstart', beforebrushstarted)
       );
-  }, [width, height, xScale, defaultSelection, brushed]);
+  }, [brush, brushed, brushended, beforebrushstarted]);
+
+  useEffect(() => {
+    if (!brush) return;
+    const svg = select(chartRef.current);
+    svg.select('.brush').call(brush.move, defaultSelection);
+  }, [brush, defaultSelection]);
+
+  const handleWheel = (event) => {
+    if (event.deltaX) {
+      setBrushSelectionEnd(
+        max([
+          endDateMin,
+          dates[
+            Math.max(
+              0,
+              Math.min(
+                dates.length - 1,
+                dates.indexOf(currentBrushSelection[1]) +
+                  Math.sign(event.deltaX) * brushWheelDelta
+              )
+            )
+          ],
+        ])
+      );
+    }
+  };
 
   return (
     <div className="Timeseries">
       <div
-        className={classnames('svg-parent fadeInUp is-brush')}
+        className={classnames('svg-parent is-brush fadeInUp')}
         ref={wrapperRef}
+        onWheel={handleWheel}
+        style={{animationDelay: `${animationIndex * 250}ms`}}
       >
         <svg ref={chartRef} preserveAspectRatio="xMidYMid meet">
-          <g className="brush" />
+          <defs>
+            <clipPath id="clipPath">
+              <rect
+                x={0}
+                y={`${margin.top}`}
+                width={width}
+                height={`${Math.max(0, height - margin.bottom)}`}
+              />
+            </clipPath>
+            <mask id="mask">
+              <rect
+                x={0}
+                y={`${margin.top}`}
+                width={width}
+                height={`${Math.max(0, height - margin.bottom)}`}
+                fill="hsl(0, 0%, 40%)"
+              />
+              <use href="#selection" fill="white" />
+            </mask>
+          </defs>
+
+          <g className="brush" clipPath="url(#clipPath)">
+            <g mask="url(#mask)">
+              <rect className="overlay" />
+              <g className="trend-areas" />
+              <rect className="selection" id="selection" />
+            </g>
+          </g>
           <g className="x-axis" />
         </svg>
       </div>
@@ -218,7 +295,9 @@ function TimeseriesBrush({
 }
 
 const isEqual = (prevProps, currProps) => {
-  if (!equal(currProps.brushDomain, prevProps.brushDomain)) {
+  if (
+    !equal(currProps.currentBrushSelection, prevProps.currentBrushSelection)
+  ) {
     return false;
   } else if (
     !equal(
@@ -235,6 +314,10 @@ const isEqual = (prevProps, currProps) => {
   ) {
     return false;
   } else if (!equal(currProps.endDate, prevProps.endDate)) {
+    return false;
+  } else if (!equal(currProps.lookback, prevProps.lookback)) {
+    return false;
+  } else if (!equal(currProps.animationIndex, prevProps.animationIndex)) {
     return false;
   } else if (!equal(currProps.dates, prevProps.dates)) {
     return false;
