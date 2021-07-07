@@ -2,6 +2,7 @@ import TimeseriesLoader from './loaders/Timeseries';
 
 import {
   STATE_NAMES,
+  STATISTIC_CONFIGS,
   TIMESERIES_CHART_TYPES,
   TIMESERIES_LOOKBACK_DAYS,
   TIMESERIES_STATISTICS,
@@ -44,10 +45,11 @@ function TimeseriesExplorer({
   setAnchor,
   expandTable = false,
   hideVaccinated = false,
+  noRegionHighlightedDistrictData,
 }) {
   const {t} = useTranslation();
   const [lookback, setLookback] = useLocalStorage('timeseriesLookbackDays', 90);
-  const [chartType, setChartType] = useLocalStorage('chartType', 'total');
+  const [chartType, setChartType] = useLocalStorage('chartType', 'delta');
   const [isUniform, setIsUniform] = useLocalStorage('isUniform', false);
   const [isLog, setIsLog] = useLocalStorage('isLog', false);
   const [isMovingAverage, setIsMovingAverage] = useLocalStorage(
@@ -193,7 +195,9 @@ function TimeseriesExplorer({
     () =>
       TIMESERIES_STATISTICS.filter(
         (statistic) =>
-          (statistic !== 'vaccinated' || !hideVaccinated) &&
+          (!(STATISTIC_CONFIGS[statistic]?.category === 'vaccinated') ||
+            !hideVaccinated) &&
+          // (chartType === 'total' || statistic !== 'active') &&
           (chartType === 'delta' || statistic !== 'tpr')
       ),
     [chartType, hideVaccinated]
@@ -222,7 +226,7 @@ function TimeseriesExplorer({
             stickied: anchor === 'timeseries',
           })}
           style={{
-            display: expandTable && width > 769 ? 'none' : '',
+            display: expandTable && width >= 769 ? 'none' : '',
           }}
           onClick={
             setAnchor &&
@@ -341,6 +345,7 @@ function TimeseriesExplorer({
               isUniform,
               isLog,
               isMovingAverage,
+              noRegionHighlightedDistrictData,
             }}
           />
           <TimeseriesBrush
@@ -402,6 +407,13 @@ const isEqual = (prevProps, currProps) => {
   } else if (!equal(currProps.expandTable, prevProps.expandTable)) {
     return false;
   } else if (!equal(currProps.hideVaccinated, prevProps.hideVaccinated)) {
+    return false;
+  } else if (
+    !equal(
+      currProps.noRegionHighlightedDistrictData,
+      prevProps.noRegionHighlightedDistrictData
+    )
+  ) {
     return false;
   }
   return true;

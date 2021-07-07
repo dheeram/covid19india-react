@@ -1,13 +1,26 @@
 import TableLoader from './loaders/Table';
 
-import {DATA_API_ROOT, GOSPEL_DATE} from '../constants';
+import {
+  DATA_API_ROOT,
+  DISTRICT_START_DATE,
+  DISTRICT_TEST_END_DATE,
+  MAP_VIEWS,
+  PRIMARY_STATISTICS,
+  TESTED_EXPIRING_DAYS,
+  UNKNOWN_DISTRICT_KEY,
+} from '../constants';
 import useIsVisible from '../hooks/useIsVisible';
 import useStickySWR from '../hooks/useStickySWR';
-import {fetcher, getStatistic, retry} from '../utils/commonFunctions';
+import {
+  fetcher,
+  getStatistic,
+  parseIndiaDate,
+  retry,
+} from '../utils/commonFunctions';
 
-import {HeartIcon} from '@primer/octicons-react';
 import classnames from 'classnames';
-import {useState, useRef, lazy, Suspense} from 'react';
+import {addDays, formatISO, max} from 'date-fns';
+import {useMemo, useRef, useState, lazy, Suspense} from 'react';
 import {Helmet} from 'react-helmet';
 import {useLocation} from 'react-router-dom';
 import {useLocalStorage, useSessionStorage, useWindowSize} from 'react-use';
@@ -15,7 +28,9 @@ import {useLocalStorage, useSessionStorage, useWindowSize} from 'react-use';
 const Actions = lazy(() => retry(() => import('./Actions')));
 const Footer = lazy(() => retry(() => import('./Footer')));
 const Level = lazy(() => retry(() => import('./Level')));
-const LevelVaccinated = lazy(() => retry(() => import('./LevelVaccinated')));
+const VaccinationHeader = lazy(() =>
+  retry(() => import('./VaccinationHeader'))
+);
 const MapExplorer = lazy(() => retry(() => import('./MapExplorer')));
 const MapSwitcher = lazy(() => retry(() => import('./MapSwitcher')));
 const Minigraphs = lazy(() => retry(() => import('./Minigraphs')));
@@ -38,6 +53,8 @@ function Home() {
     'mapStatistic',
     'active'
   );
+  const [mapView, setMapView] = useLocalStorage('mapView', MAP_VIEWS.DISTRICTS);
+
   const [date, setDate] = useState('');
   const location = useLocation();
 
@@ -63,9 +80,58 @@ function Home() {
   const isVisible = useIsVisible(homeRightElement);
   const {width} = useWindowSize();
 
-  const hideDistrictData = date !== '' && date < GOSPEL_DATE;
+  const hideDistrictData = date !== '' && date < DISTRICT_START_DATE;
+  const hideDistrictTestData =
+    date === '' ||
+    date >
+      formatISO(
+        addDays(parseIndiaDate(DISTRICT_TEST_END_DATE), TESTED_EXPIRING_DAYS),
+        {representation: 'date'}
+      );
+
   const hideVaccinated =
     getStatistic(data?.['TT'], 'total', 'vaccinated') === 0;
+
+  const lastDataDate = useMemo(() => {
+    const updatedDates = [
+      data?.['TT']?.meta?.date,
+      data?.['TT']?.meta?.tested?.date,
+      data?.['TT']?.meta?.vaccinated?.date,
+    ].filter((date) => date);
+    return updatedDates.length > 0
+      ? formatISO(max(updatedDates.map((date) => parseIndiaDate(date))), {
+          representation: 'date',
+        })
+      : null;
+  }, [data]);
+
+  const noDistrictDataStates = useMemo(
+    () =>
+      // Heuristic: All cases are in Unknown
+      Object.entries(data || {}).reduce((res, [stateCode, stateData]) => {
+        res[stateCode] = !!(
+          stateData?.districts &&
+          stateData.districts?.[UNKNOWN_DISTRICT_KEY] &&
+          PRIMARY_STATISTICS.every(
+            (statistic) =>
+              getStatistic(stateData, 'total', statistic) ===
+              getStatistic(
+                stateData.districts[UNKNOWN_DISTRICT_KEY],
+                'total',
+                statistic
+              )
+          )
+        );
+        return res;
+      }, {}),
+    [data]
+  );
+
+  const noRegionHighlightedDistrictData =
+    regionHighlighted?.stateCode &&
+    regionHighlighted?.districtName &&
+    regionHighlighted.districtName !== UNKNOWN_DISTRICT_KEY &&
+    noDistrictDataStates[regionHighlighted.stateCode];
 
   return (
     <>
@@ -105,7 +171,7 @@ function Home() {
           <div style={{position: 'relative', marginTop: '1rem'}}>
             {data && (
               <Suspense fallback={<div style={{height: '50rem'}} />}>
-                {width > 769 && !expandTable && (
+                {width >= 769 && !expandTable && (
                   <MapSwitcher {...{mapStatistic, setMapStatistic}} />
                 )}
                 <Level data={data['TT']} />
@@ -113,9 +179,9 @@ function Home() {
             )}
 
             <>
-              {!timeseries && <div style={{height: '107px'}} />}
+              {!timeseries && <div style={{height: '123px'}} />}
               {timeseries && (
-                <Suspense fallback={<div style={{height: '107px'}} />}>
+                <Suspense fallback={<div style={{height: '123px'}} />}>
                   <Minigraphs
                     timeseries={timeseries['TT']?.dates}
                     {...{date}}
@@ -125,12 +191,7 @@ function Home() {
             </>
           </div>
 
-          <a href="/resources" className="essentials fadeInUp">
-            <HeartIcon />
-            Crowdsourced Resources
-          </a>
-
-          {!hideVaccinated && <LevelVaccinated data={data['TT']} />}
+          {!hideVaccinated && <VaccinationHeader data={data['TT']} />}
 
           {data && (
             <Suspense fallback={<TableLoader />}>
@@ -142,7 +203,10 @@ function Home() {
                   expandTable,
                   setExpandTable,
                   hideDistrictData,
+                  hideDistrictTestData,
                   hideVaccinated,
+                  lastDataDate,
+                  noDistrictDataStates,
                 }}
               />
             </Suspense>
@@ -152,7 +216,7 @@ function Home() {
         <div
           className={classnames('home-right', {expanded: expandTable})}
           ref={homeRightElement}
-          style={{minHeight: '2rem'}}
+          style={{minHeight: '4rem'}}
         >
           {(isVisible || location.hash) && (
             <>
@@ -161,18 +225,30 @@ function Home() {
                   className={classnames('map-container', {
                     expanded: expandTable,
                     stickied:
-                      anchor === 'mapexplorer' || (expandTable && width > 769),
+                      anchor === 'mapexplorer' || (expandTable && width >= 769),
                   })}
                 >
                   <Suspense fallback={<div style={{height: '50rem'}} />}>
                     <StateHeader data={data['TT']} stateCode={'TT'} />
                     <MapExplorer
-                      stateCode="TT"
-                      {...{date, data}}
-                      {...{mapStatistic, setMapStatistic}}
-                      {...{regionHighlighted, setRegionHighlighted}}
-                      {...{anchor, setAnchor}}
-                      {...{expandTable, hideDistrictData}}
+                      {...{
+                        stateCode: 'TT',
+                        data,
+                        mapStatistic,
+                        setMapStatistic,
+                        mapView,
+                        setMapView,
+                        regionHighlighted,
+                        setRegionHighlighted,
+                        anchor,
+                        setAnchor,
+                        expandTable,
+                        lastDataDate,
+                        hideDistrictData,
+                        hideDistrictTestData,
+                        hideVaccinated,
+                        noRegionHighlightedDistrictData,
+                      }}
                     />
                   </Suspense>
                 </div>
@@ -191,6 +267,7 @@ function Home() {
                       setAnchor,
                       expandTable,
                       hideVaccinated,
+                      noRegionHighlightedDistrictData,
                     }}
                   />
                 </Suspense>

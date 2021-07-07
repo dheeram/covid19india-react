@@ -8,16 +8,13 @@ import {
   STATISTIC_CONFIGS,
   UNKNOWN_DISTRICT_KEY,
 } from '../constants';
-import {
-  capitalize,
-  formatLastUpdated,
-  getTableStatistic,
-} from '../utils/commonFunctions';
+import {capitalize, formatLastUpdated} from '../utils/commonFunctions';
 
 import {
   AlertIcon,
   ClockIcon,
-  FilterIcon,
+  SortAscIcon,
+  SortDescIcon,
   FoldUpIcon,
   GraphIcon,
   InfoIcon,
@@ -25,7 +22,7 @@ import {
 import classnames from 'classnames';
 import equal from 'fast-deep-equal';
 import produce from 'immer';
-import {memo, useState, useCallback, useRef} from 'react';
+import {memo, useCallback, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useHistory} from 'react-router-dom';
 import {useSessionStorage} from 'react-use';
@@ -35,11 +32,12 @@ function Row({
   tableStatistics,
   stateCode,
   districtName,
-  isPerMillion,
   regionHighlighted,
   setRegionHighlighted,
   expandTable,
-  lastUpdatedTT,
+  getTableStatistic,
+  tableWidth,
+  noDistrictData,
 }) {
   const [showDistricts, setShowDistricts] = useState(false);
   const [sortData, setSortData] = useSessionStorage('districtSortData', {
@@ -55,12 +53,25 @@ function Row({
 
   const handleSortClick = useCallback(
     (statistic) => {
-      setSortData(
-        produce(sortData, (draftSortData) => {
-          draftSortData.isAscending = !sortData.isAscending;
-          draftSortData.sortColumn = statistic;
-        })
-      );
+      if (sortData.sortColumn !== statistic) {
+        setSortData(
+          produce(sortData, (draftSortData) => {
+            if (
+              sortData.sortColumn === 'districtName' ||
+              statistic === 'districtName'
+            ) {
+              draftSortData.isAscending = !sortData.isAscending;
+            }
+            draftSortData.sortColumn = statistic;
+          })
+        );
+      } else {
+        setSortData(
+          produce(sortData, (draftSortData) => {
+            draftSortData.isAscending = !sortData.isAscending;
+          })
+        );
+      }
     },
     [sortData, setSortData]
   );
@@ -70,20 +81,18 @@ function Row({
       if (sortData.sortColumn !== 'districtName') {
         const statisticConfig = STATISTIC_CONFIGS[sortData.sortColumn];
         const dataType =
-          sortData.delta && statisticConfig.showDelta ? 'delta' : 'total';
+          sortData.delta && statisticConfig?.showDelta ? 'delta' : 'total';
 
         const statisticA = getTableStatistic(
           data.districts[districtNameA],
           sortData.sortColumn,
-          {perMillion: isPerMillion},
-          lastUpdatedTT
-        )[dataType];
+          dataType
+        );
         const statisticB = getTableStatistic(
           data.districts[districtNameB],
           sortData.sortColumn,
-          {perMillion: isPerMillion},
-          lastUpdatedTT
-        )[dataType];
+          dataType
+        );
         return sortData.isAscending
           ? statisticA - statisticB
           : statisticB - statisticA;
@@ -93,7 +102,7 @@ function Row({
           : districtNameB.localeCompare(districtNameA);
       }
     },
-    [sortData, data, isPerMillion, lastUpdatedTT]
+    [sortData, data, getTableStatistic]
   );
 
   const highlightState = useCallback(() => {
@@ -177,7 +186,7 @@ function Row({
             {t(STATE_NAMES[stateCode]) || districtNameStr}
           </div>
           {data?.meta?.notes && (
-            <Tooltip {...{data: data.meta.notes}}>
+            <Tooltip message={data.meta.notes}>
               <InfoIcon size={16} />
             </Tooltip>
           )}
@@ -186,15 +195,31 @@ function Row({
         {tableStatistics.map((statistic) => (
           <Cell
             key={statistic}
-            {...{data, statistic, isPerMillion, lastUpdatedTT}}
+            noDistrictData={
+              !stateCode &&
+              districtName !== UNKNOWN_DISTRICT_KEY &&
+              noDistrictData
+            }
+            {...{
+              data,
+              statistic,
+              getTableStatistic,
+            }}
           />
         ))}
       </div>
 
       {showDistricts && (
         <>
-          <div className="state-meta">
+          <div className="state-meta" style={{width: tableWidth}}>
             <div className="state-meta-top">
+              <div
+                className="state-page"
+                onClick={handleStatePageClick.bind(this, stateCode)}
+              >
+                <GraphIcon />
+                <span>{t('See more details')}</span>
+              </div>
               {data?.meta?.['last_updated'] && (
                 <p className="last-updated">
                   <ClockIcon />
@@ -203,17 +228,6 @@ function Row({
                   )}
                 </p>
               )}
-              <div
-                className="state-page"
-                onClick={handleStatePageClick.bind(this, stateCode)}
-              >
-                <GraphIcon />
-                <span>
-                  {t('See more details on {{state}}', {
-                    state: stateCode,
-                  })}
-                </span>
-              </div>
             </div>
 
             {data.districts && UNKNOWN_DISTRICT_KEY in data.districts && (
@@ -235,12 +249,12 @@ function Row({
             >
               <div className="district-name">{t('District')}</div>
               {sortData.sortColumn === 'districtName' && (
-                <div
-                  className={classnames('sort-icon', {
-                    invert: !sortData.isAscending,
-                  })}
-                >
-                  <FilterIcon size={10} />
+                <div className={'sort-icon'}>
+                  {sortData.isAscending ? (
+                    <SortAscIcon size={12} />
+                  ) : (
+                    <SortDescIcon size={12} />
+                  )}
                 </div>
               )}
             </div>
@@ -263,21 +277,23 @@ function Row({
             <DistrictRow
               data={data.districts[districtName]}
               key={districtName}
+              noDistrictData={
+                districtName !== UNKNOWN_DISTRICT_KEY && noDistrictData
+              }
               {...{
                 tableStatistics,
                 districtName,
                 regionHighlighted,
                 setRegionHighlighted,
                 stateCode,
-                isPerMillion,
                 expandTable,
-                lastUpdatedTT,
+                getTableStatistic,
               }}
             />
           ))}
 
       {showDistricts && (
-        <div className="spacer-row">
+        <div className="spacer-row" style={{width: tableWidth}}>
           <div className="spacer">
             <p>{`End of ${t(STATE_NAMES[stateCode])}'s districts`}</p>
             <div className="fold" onClick={handleCollapse}>
@@ -294,8 +310,6 @@ const isEqual = (prevProps, currProps) => {
   if (!equal(prevProps.data?.total, currProps.data?.total)) {
     return false;
   } else if (!equal(prevProps.data?.delta, currProps.data?.delta)) {
-    return false;
-  } else if (!equal(prevProps.isPerMillion, currProps.isPerMillion)) {
     return false;
   } else if (
     (!equal(
@@ -319,6 +333,12 @@ const isEqual = (prevProps, currProps) => {
   ) {
     return false;
   } else if (!equal(prevProps.expandTable, currProps.expandTable)) {
+    return false;
+  } else if (!equal(prevProps.noDistrictData, currProps.noDistrictData)) {
+    return false;
+  } else if (!equal(prevProps.tableWidth, currProps.tableWidth)) {
+    return false;
+  } else if (!equal(prevProps.getTableStatistic, currProps.getTableStatistic)) {
     return false;
   } else if (!equal(prevProps.tableStatistics, currProps.tableStatistics)) {
     return false;

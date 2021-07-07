@@ -6,7 +6,7 @@ $dark: #343a40;
 $black: #000;
 
 $blue: #007bff;
-$blue-light: #007bff10;
+$blue-light: #007bff20;
 $blue-hover: #007bff30;
 $blue-light-opaque: #eff7ff;
 $blue-mid: #007bff99;
@@ -59,7 +59,7 @@ $pink-light: #db558120;
 $pink-hover: #db558130;
 $pink-mid: #db558199;
 $brown: #b6854d;
-$brown-light: #b6854d10;
+$brown-light: #b6854d20;
 $brown-hover: #b6854d30;
 $brown-mid: #b6854d99;
 $brick: #e23028;
@@ -378,7 +378,7 @@ h6 {
   flex-direction: row;
   flex-wrap: wrap;
   justify-content: center;
-  margin-left: 8rem;
+  margin-left: 9rem;
   margin-right: 3rem;
 
   .state-left,
@@ -401,13 +401,8 @@ h6 {
   }
 
   .district-bar {
+    margin-bottom: 2.5rem;
     width: calc(100% - 2rem);
-  }
-
-  .Minigraph {
-    .svg-parent {
-      width: calc(25%) !important;
-    }
   }
 
   .MapExplorer {
@@ -500,6 +495,7 @@ h6 {
       display: flex;
       flex-direction: row;
       justify-content: space-between;
+      margin-right: 1rem;
 
       & > * {
         align-self: center;
@@ -507,11 +503,6 @@ h6 {
 
       h3 {
         width: calc(100% - 2.5rem);
-      }
-
-      span {
-        margin-bottom: auto;
-        margin-right: 1rem;
       }
 
       svg {
@@ -603,7 +594,7 @@ h6 {
       }
     }
 
-    &.cpm {
+    &.cpl {
       background: $yellow-light;
 
       h3,
@@ -617,7 +608,7 @@ h6 {
       }
     }
 
-    &.tpm {
+    &.tpl {
       background: $purple-light;
 
       h3,
@@ -632,33 +623,18 @@ h6 {
       }
     }
 
-    &.ptr {
-      background: $pink-light;
-
-      h3,
-      h5,
-      svg,
-      p {
-        color: $pink-mid;
-      }
-
-      h1 {
-        color: $pink;
-      }
-    }
-
-    &.gr {
-      background: $brown-light;
+    &.tpr {
+      background: $orange-light;
 
       h3,
       h5,
       p,
       svg {
-        color: $brown-mid;
+        color: $orange-mid;
       }
 
       h1 {
-        color: $brown;
+        color: $orange;
       }
     }
   }
@@ -708,6 +684,121 @@ h6 {
     top: 0;
     width: 100vw;
     z-index: 10;
+  }
+}
+
+.StatisticDropdown {
+  margin-left: -3px;
+  margin-top: 0.5rem;
+  position: relative;
+
+  .triangle-icon {
+    left: -16px;
+    position: absolute;
+    top: 2px;
+
+    svg {
+      vertical-align: middle !important;
+    }
+  }
+
+  select {
+    appearance: none;
+    background-color: $gray-light;
+    border: 0;
+    border-radius: 3px;
+    color: $gray;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    max-width: 14rem;
+    min-width: 3rem;
+    outline-color: $gray-hover;
+    padding: 3px;
+
+    option {
+      background-color: #eee;
+      color: $gray;
+      padding: 3px;
+    }
+
+    &:hover {
+      background-color: $gray-hover;
+    }
+
+    &.confirmed {
+      background-color: $cherry-light;
+      color: $cherry;
+      outline-color: $cherry-hover;
+
+      &:hover {
+        background-color: $cherry-hover;
+      }
+    }
+
+    &.active {
+      background-color: $blue-light;
+      color: $blue;
+      outline-color: $blue-hover;
+
+      &:hover {
+        background-color: $blue-hover;
+      }
+    }
+
+    &.recovered {
+      background-color: $green-light;
+      color: $green;
+      outline-color: $green-hover;
+
+      &:hover {
+        background-color: $green-hover;
+      }
+    }
+
+    &.tested {
+      background-color: $purple-light;
+      color: $purple;
+      outline-color: $purple-hover;
+
+      &:hover {
+        background-color: $purple-hover;
+      }
+    }
+
+    &.other,
+    &.tpr,
+    &.cfr {
+      background-color: $orange-light;
+      color: $orange;
+      outline-color: $orange-hover;
+
+      &:hover {
+        background-color: $orange-hover;
+      }
+    }
+
+    &.vaccinated,
+    &.vaccinated1,
+    &.vaccinated2 {
+      background-color: $pink-light;
+      color: $pink;
+      outline-color: $pink-hover;
+
+      &:hover {
+        background-color: $pink-hover;
+      }
+    }
+
+    &.population {
+      background-color: $brown-light;
+      color: $brown;
+      outline-color: $brown-hover;
+
+      &:hover {
+        background-color: $brown-hover;
+      }
+    }
   }
 }
 
@@ -1211,6 +1302,7 @@ h6 {
       fill: #a6abb0;
       stroke: #a6abb0;
       stroke-width: 0.5;
+      user-select: none;
       width: 16px;
 
       &:hover {
@@ -1254,6 +1346,7 @@ h6 {
 
 .Timeline {
   align-items: center;
+  user-select: none;
   width: 100%;
 
   .timeline {
@@ -1343,11 +1436,26 @@ h6 {
         }
 
         &:hover {
+          background-color: #6c757d30;
           opacity: 0.8;
         }
 
         &::selection {
           background: transparent !important;
+        }
+      }
+
+      .calendar-icon {
+        align-self: center;
+        cursor: pointer;
+        display: flex;
+        margin-left: 0.2rem;
+        opacity: 0;
+        transition: opacity 0.15s ease-in-out;
+
+        &.show {
+          opacity: 1;
+          pointer-events: all;
         }
       }
     }
@@ -1592,14 +1700,13 @@ h6 {
   .highlight {
     pointer-events: none;
     position: absolute;
-    width: calc(25%) !important;
   }
 
   .highlight,
   .clickable {
     border-radius: 5px;
     cursor: pointer;
-    height: 13rem;
+    height: 14rem;
     width: calc(25%);
     z-index: 10;
   }
@@ -1637,7 +1744,6 @@ h6 {
   .level-item {
     display: flex;
     flex-direction: column;
-    width: calc(25%);
 
     & > * {
       align-self: center;
@@ -1708,24 +1814,143 @@ h6 {
       color: $gray-mid;
     }
   }
+
+  .is-tested {
+    h1,
+    h5 {
+      color: $purple;
+    }
+
+    h4 {
+      color: $purple-mid;
+    }
+  }
+
+  .is-vaccinated {
+    h1,
+    h5 {
+      color: $pink;
+    }
+
+    h4 {
+      color: $pink-mid;
+    }
+  }
+
+  .is-tpr {
+    h1,
+    h5 {
+      color: $orange;
+    }
+
+    h4 {
+      color: $orange-mid;
+    }
+  }
 }
 
-.LevelVaccinated {
+.VaccinationHeader {
   align-items: center;
   align-self: center;
-  animation-delay: 200ms;
-  background: $pink-light;
-  border-radius: 5px;
-  color: $pink;
   display: flex;
-  flex-direction: row;
-  margin-bottom: 0.5rem;
-  margin-top: 1.5rem;
-  padding: 0.5rem;
+  flex-direction: column;
+  margin-bottom: 0.25rem;
+  margin-top: 2rem;
+  width: 100%;
 
-  h4 {
-    font-weight: 500;
-    margin: 0 0 0 0.25rem;
+  .level-vaccinated {
+    align-items: center;
+    align-self: center;
+    animation-delay: 200ms;
+    background: $pink-light;
+    border-radius: 5px;
+    color: $pink;
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+
+    div {
+      font-size: 13px;
+      font-weight: 500;
+      margin: 0 0 0 0.25rem;
+    }
+  }
+
+  .progress-bar-wrapper {
+    color: $gray;
+    font-size: 12px;
+    margin-top: 0.5rem;
+    position: relative;
+    width: 100%;
+
+    .progress-bar {
+      background-color: $pink-light;
+      border-radius: 5px;
+      color: $pink;
+      height: 24px;
+      margin-bottom: 0.1rem;
+      margin-top: 0.1rem;
+      position: relative;
+
+      &.value {
+        background-image: linear-gradient(
+          45deg,
+          $pink-mid 25%,
+          $pink-light 25%,
+          $pink-light 50%,
+          $pink-mid 50%,
+          $pink-mid 75%,
+          $pink-light 75%,
+          $pink-light 100%
+        );
+        background-size: 14px 14px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        justify-content: center;
+        margin: 0;
+        opacity: 0.6;
+        position: absolute;
+
+        &.opaque {
+          background: $pink-mid;
+        }
+
+        &.highlighted {
+          opacity: 1;
+        }
+
+        span {
+          margin-left: calc(100% + 0.25rem);
+          width: max-content;
+        }
+      }
+    }
+
+    .legend {
+      opacity: 0.6;
+
+      &.highlighted {
+        opacity: 1;
+      }
+
+      .label-wrapper {
+        display: flex;
+
+        .label {
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+      }
+
+      .arrow {
+        cursor: pointer;
+        margin-bottom: 0.2rem;
+        width: fit-content;
+      }
+    }
   }
 }
 
@@ -1755,6 +1980,21 @@ abbr {
   margin-top: 2rem;
 }
 
+.Icons {
+  font-size: 12px;
+  font-weight: 600;
+
+  span {
+    font-size: 8px;
+    font-weight: 600;
+    line-height: 6px;
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    user-select: none;
+  }
+}
+
 .table-top {
   align-items: flex-end;
   align-self: center;
@@ -1765,24 +2005,36 @@ abbr {
   margin-bottom: 0.25rem;
   width: 100%;
 
-  .option-toggle,
-  .info-toggle,
-  .million-toggle,
-  .expand-table-toggle {
+  .table-top-left {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .toggle {
+    align-items: center;
     background: $gray-light;
     border-radius: 5px;
     color: $gray-mid;
     cursor: pointer;
+    display: flex;
+    height: 2.5rem;
+    justify-content: center;
     margin-right: 0.25rem;
-    padding: 0.5rem;
+    user-select: none;
+    width: 2.5rem;
+
+    &.disabled {
+      cursor: not-allowed;
+    }
 
     svg {
-      align-self: center;
       margin: 0.25rem;
     }
 
     &:hover {
-      background: $gray-hover;
+      &:not(.disabled) {
+        background: $gray-hover;
+      }
     }
   }
 
@@ -1809,18 +2061,24 @@ abbr {
     }
   }
 
-  .million-toggle {
-    font-size: 13px;
-    font-weight: 600;
-    padding: 11.5px 10px;
-    text-align: center;
-
+  .lakh-toggle {
     &.is-highlighted {
       background: $pink-light;
       color: $pink;
 
       &:hover {
         background: $pink-hover;
+      }
+    }
+  }
+
+  .delta-toggle {
+    &.is-highlighted {
+      background: $blue-light;
+      color: $blue;
+
+      &:hover {
+        background: $blue-hover;
       }
     }
   }
@@ -1840,6 +2098,7 @@ abbr {
       cursor: pointer;
       margin-bottom: 0.25rem;
       transform: rotate(-90deg);
+      transition: transform 0.15s ease-in-out;
     }
   }
 
@@ -1925,7 +2184,9 @@ abbr {
       }
     }
 
-    .is-vaccinated {
+    .is-vaccinated,
+    .is-vaccinated1,
+    .is-vaccinated2 {
       svg {
         color: $pink;
       }
@@ -1943,10 +2204,11 @@ abbr {
       }
     }
 
-    &.invert {
-      svg {
-        margin-bottom: 0;
-        transform: rotate(180deg);
+    &.abbr {
+      sup {
+        position: relative;
+        top: -0.4em;
+        vertical-align: baseline;
       }
     }
   }
@@ -1983,11 +2245,13 @@ abbr {
 
   .state-meta {
     grid-column: 1 / -1;
+    left: 0;
+    position: sticky;
 
     .state-meta-top {
       align-items: center;
       display: flex;
-      flex-direction: row;
+      flex-direction: row-reverse;
       flex-wrap: wrap;
       justify-content: space-between;
       margin-bottom: 1 + 0.25rem;
@@ -2080,6 +2344,7 @@ abbr {
 
       .cell {
         background: $gray-hover-opaque !important;
+        padding-bottom: 0.75rem;
       }
     }
 
@@ -2159,15 +2424,12 @@ abbr {
           }
         }
 
-        &.is-vaccinated {
+        &.is-vaccinated,
+        &.is-vaccinated1,
+        &.is-vaccinated2 {
           svg {
             color: $pink;
           }
-        }
-
-        &.invert {
-          margin-top: 0.25rem;
-          transform: rotate(180deg);
         }
       }
 
@@ -2201,7 +2463,9 @@ abbr {
           color: $purple;
         }
 
-        .is-vaccinated {
+        .is-vaccinated,
+        .is-vaccinated1,
+        .is-vaccinated2 {
           color: $pink;
         }
       }
@@ -2215,9 +2479,23 @@ abbr {
         font-size: 13px;
         font-weight: 900;
         padding: 1.25rem 0.5rem 0.75rem;
+        text-align: right;
+
+        &.state {
+          padding: 1.5rem 0.5rem 0.75rem;
+
+          .sort-icon {
+            top: 0.5rem;
+          }
+        }
 
         &:hover {
           background: $gray-hover-opaque !important;
+        }
+
+        svg {
+          margin-left: 0;
+          margin-right: 0.3rem;
         }
       }
 
@@ -2233,6 +2511,8 @@ abbr {
 
   .spacer-row {
     grid-column: 1 / -1;
+    left: 0;
+    position: sticky;
 
     .spacer {
       color: $gray-mid;
@@ -2310,6 +2590,7 @@ abbr {
   cursor: pointer;
   position: absolute;
   right: 0;
+  user-select: none;
   z-index: 999;
 
   svg {
@@ -2343,7 +2624,6 @@ abbr {
 
 .MapExplorer {
   align-self: center;
-  margin-bottom: 3rem;
   position: relative;
   width: 100%;
 
@@ -2370,7 +2650,7 @@ abbr {
 
     &.maplegend {
       margin-top: 0.6rem;
-      width: 100%;
+      user-select: none;
       z-index: 1;
     }
 
@@ -2382,7 +2662,6 @@ abbr {
 
       text {
         fill: $gray;
-        font-size: 10px;
         font-weight: 600;
         text-align: right;
       }
@@ -2491,97 +2770,140 @@ abbr {
     }
 
     .panel-right {
+      color: $gray-mid;
       display: flex;
       flex-direction: column;
+
+      .disabled {
+        cursor: not-allowed !important;
+      }
 
       svg {
         transition: all 0.3s ease-in-out;
       }
 
-      &.is-confirmed {
-        svg {
-          fill: $cherry-light;
-          stroke: $cherry-mid;
-        }
+      .is-highlighted {
+        background: $gray-middark !important;
 
-        .boundary {
-          svg {
-            fill: $cherry-mid;
-            stroke: none;
+        &:hover {
+          &:not(.disabled) {
+            background: $gray-hover !important;
           }
         }
+      }
+
+      &.is-confirmed {
+        color: $cherry-mid;
 
         .is-highlighted {
-          background: $cherry-light;
+          background: $cherry-light !important;
 
           &:hover {
-            background: $cherry-hover;
+            &:not(.disabled) {
+              background: $cherry-hover !important;
+            }
           }
         }
       }
 
       &.is-active {
-        svg {
-          fill: $blue-light;
-          stroke: $blue-mid;
-        }
-
-        .boundary {
-          svg {
-            fill: $blue-mid;
-            stroke: none;
-          }
-        }
+        color: $blue-mid;
 
         .is-highlighted {
-          background: $blue-light;
+          background: $blue-light !important;
 
           &:hover {
-            background: $blue-hover;
+            &:not(.disabled) {
+              background: $blue-hover !important;
+            }
           }
         }
       }
 
       &.is-recovered {
-        svg {
-          fill: $green-light;
-          stroke: $green-mid;
-        }
-
-        .boundary {
-          svg {
-            fill: $green-mid;
-            stroke: none;
-          }
-        }
+        color: $green-mid;
 
         .is-highlighted {
-          background: $green-light;
+          background: $green-light !important;
 
           &:hover {
-            background: $green-hover;
+            &:not(.disabled) {
+              background: $green-hover !important;
+            }
           }
         }
       }
 
       &.is-deceased {
-        svg {
-          fill: $gray-light;
-          stroke: $gray-mid;
-        }
-
-        .boundary {
-          svg {
-            fill: $gray-mid;
-            stroke: none;
-          }
-        }
+        color: $gray-mid;
 
         .is-highlighted {
-          background: $gray-middark;
+          background: $gray-middark !important;
 
           &:hover {
-            background: $gray-hover;
+            &:not(.disabled) {
+              background: $gray-hover !important;
+            }
+          }
+        }
+      }
+
+      &.is-tpr,
+      &.is-cfr,
+      &.is-other {
+        color: $orange-mid;
+
+        .is-highlighted {
+          background: $orange-light !important;
+
+          &:hover {
+            &:not(.disabled) {
+              background: $orange-hover !important;
+            }
+          }
+        }
+      }
+
+      &.is-tested {
+        color: $purple-mid;
+
+        .is-highlighted {
+          background: $purple-light !important;
+
+          &:hover {
+            &:not(.disabled) {
+              background: $purple-hover !important;
+            }
+          }
+        }
+      }
+
+      &.is-vaccinated,
+      &.is-vaccinated1,
+      &.is-vaccinated2 {
+        color: $pink-mid;
+
+        .is-highlighted {
+          background: $pink-light !important;
+
+          &:hover {
+            &:not(.disabled) {
+              background: $pink-hover !important;
+            }
+          }
+        }
+      }
+
+      &.is-population {
+        color: $brown-mid;
+
+        .is-highlighted {
+          background: $brown-light !important;
+
+          &:hover {
+            &:not(.disabled) {
+              background: $brown-hover !important;
+            }
           }
         }
       }
@@ -2593,7 +2915,7 @@ abbr {
         justify-content: flex-end;
         margin-bottom: 0.25rem;
 
-        div {
+        .toggle {
           align-items: center;
           background: $gray-light;
           border-radius: 5px;
@@ -2602,6 +2924,8 @@ abbr {
           flex-direction: row;
           height: 2.5rem;
           justify-content: center;
+          margin-left: 0.25rem;
+          user-select: none;
           width: 2.5rem;
 
           &.back {
@@ -2614,11 +2938,9 @@ abbr {
           }
 
           &:hover {
-            background: $gray-hover;
-          }
-
-          &:not(:last-child) {
-            margin-right: 0.25rem;
+            &:not(.disabled) {
+              background: $gray-hover;
+            }
           }
 
           svg {
@@ -2627,7 +2949,9 @@ abbr {
         }
 
         .divider {
+          background: $gray-hover;
           border-radius: 5px;
+          margin-left: 0.25rem;
           width: 2px !important;
         }
       }
@@ -2638,7 +2962,7 @@ abbr {
         position: absolute;
         top: 5rem;
 
-        div {
+        .statistic-option {
           background: none;
           display: flex;
           flex-direction: row;
@@ -2655,16 +2979,26 @@ abbr {
             background: none;
           }
 
+          svg {
+            fill: $gray-hover;
+            stroke: none;
+          }
+
+          &.is-highlighted {
+            svg {
+              fill: $gray;
+              transform: scale(1.25);
+            }
+          }
+
           &.is-confirmed {
             svg {
               fill: $cherry-hover;
-              stroke: none;
             }
 
             &.is-highlighted {
               svg {
                 fill: $cherry;
-                transform: scale(1.25);
               }
             }
           }
@@ -2672,13 +3006,11 @@ abbr {
           &.is-active {
             svg {
               fill: $blue-hover;
-              stroke: none;
             }
 
             &.is-highlighted {
               svg {
                 fill: $blue;
-                transform: scale(1.25);
               }
             }
           }
@@ -2686,13 +3018,11 @@ abbr {
           &.is-recovered {
             svg {
               fill: $green-hover;
-              stroke: none;
             }
 
             &.is-highlighted {
               svg {
                 fill: $green;
-                transform: scale(1.25);
               }
             }
           }
@@ -2700,13 +3030,23 @@ abbr {
           &.is-deceased {
             svg {
               fill: $gray-hover;
-              stroke: none;
             }
 
             &.is-highlighted {
               svg {
                 fill: $gray;
-                transform: scale(1.25);
+              }
+            }
+          }
+
+          &.is-vaccinated {
+            svg {
+              fill: $pink-hover;
+            }
+
+            &.is-highlighted {
+              svg {
+                fill: $pink;
               }
             }
           }
@@ -3461,12 +3801,11 @@ input {
   flex-direction: row;
   justify-content: space-between;
   margin: 0;
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
   margin-top: 1rem;
 
   .svg-parent {
     background: transparent !important;
-    width: calc(25%);
   }
 }
 
@@ -3674,7 +4013,6 @@ footer {
     font-size: 10px !important;
     font-weight: 600;
     margin: 0;
-    outline: none;
     padding: 10px 15px;
     text-align: center;
     transition: background 0.25s ease-in-out;
@@ -3751,13 +4089,14 @@ footer {
     font-weight: 900;
     margin-top: 0.5rem;
 
-    &:hover {
-      color: $blue;
-    }
-
     svg {
       height: 1rem;
-      margin-bottom: -0.25rem;
+      margin-bottom: -0.1rem;
+      margin-left: 0.25rem;
+    }
+
+    &:hover {
+      color: $blue;
     }
   }
 }
@@ -3881,6 +4220,10 @@ footer {
       &.deceased {
         color: $gray;
       }
+
+      &.vaccinated {
+        color: $pink;
+      }
     }
   }
 
@@ -3983,6 +4326,10 @@ footer {
           &.deceased {
             color: $gray-mid;
           }
+
+          &.vaccianted {
+            color: $pink-mid;
+          }
         }
 
         svg {
@@ -4004,6 +4351,10 @@ footer {
 
           &.deceased {
             color: $gray-mid;
+          }
+
+          &.vaccinated {
+            color: $pink-mid;
           }
         }
 
@@ -4091,51 +4442,36 @@ footer {
 }
 
 .Tooltip {
-  display: flex;
-  flex-direction: column;
+  background-color: $black !important;
+  border-radius: 8px !important;
+  color: $white;
+  font-size: 13px !important;
+  font-weight: 600;
+  padding: 0.5rem;
 
   .message {
-    background: #000;
-    border-radius: 5px;
-    display: flex;
-    flex-direction: row;
-    font-size: 13px;
-    font-weight: 400;
-    justify-content: flex-end;
-    max-width: 30vw;
-    min-width: 10rem;
-    padding: 0.5rem;
-    pointer-events: none;
-    right: 0;
-    top: 0;
-    transform: translate3d(2rem, 0, 0);
+    margin: 0;
 
-    p {
-      color: $white !important;
-      margin: 0;
+    :not(:last-child) {
+      margin-bottom: 0.5rem;
     }
   }
 }
 
-.essentials {
-  align-items: center;
-  align-self: center;
-  animation-delay: 750ms;
-  background: $pink-light;
-  border-radius: 5px;
-  color: $pink;
-  cursor: pointer;
-  display: flex;
-  flex-direction: row;
-  font-size: 13px;
-  justify-content: center;
-  margin-top: 1.5rem;
-  padding: 1rem;
-  text-decoration: none;
-  width: calc(100% - 4rem);
+.frac {
+  display: inline-block;
+  letter-spacing: 0.001em;
+  position: relative;
+  text-align: center;
+  vertical-align: middle;
 
-  svg {
-    margin-right: 0.5rem;
+  span {
+    display: block;
+    padding: 0.1em;
+
+    &.bottom {
+      border-top: thin solid;
+    }
   }
 }
 
@@ -4326,6 +4662,10 @@ footer {
       width: calc(50% - 2rem);
     }
   }
+
+  footer {
+    margin-bottom: 5rem;
+  }
 }
 
 @media (max-width: 769px) {
@@ -4341,7 +4681,8 @@ footer {
   .StateMeta,
   .timeline,
   .table-top,
-  .LanguageSwitcher {
+  .LanguageSwitcher,
+  .VaccinationHeader {
     width: calc(100% - 2rem);
   }
 
@@ -4577,7 +4918,7 @@ footer {
     display: grid;
     grid-gap: 1rem;
     grid-template-rows: repeat(auto-fit, minmax(5rem));
-    margin-bottom: 1rem;
+    margin-bottom: 2.5rem;
 
     .meta-item {
       min-width: 1rem;
@@ -4593,9 +4934,9 @@ footer {
     margin-left: 0;
   }
 
-  .LevelVaccinated {
-    margin-bottom: 3rem !important;
-    margin-top: 2rem !important;
+  .VaccinationHeader {
+    margin-bottom: 2rem;
+    margin-top: 1rem;
   }
 
   .timeseries-header {
@@ -4606,10 +4947,6 @@ footer {
         margin-top: 0.75rem;
       }
     }
-  }
-
-  .essentials {
-    margin-top: 0;
   }
 
   .Resources {
@@ -4625,6 +4962,13 @@ footer {
       .resource {
         width: calc(100% - 2rem);
       }
+    }
+  }
+
+  .MapSwitcher {
+    .highlight,
+    .clickable {
+      height: 13rem;
     }
   }
 }
@@ -4769,6 +5113,14 @@ footer {
       }
     }
 
+    .panel {
+      .panel-left {
+        .tested {
+          color: $dark-m-purple !important;
+        }
+      }
+    }
+
     .stats {
       &.tested {
         background: $dark-m-purple-light !important;
@@ -4855,7 +5207,7 @@ footer {
     }
   }
 
-  .tpm {
+  .tpl {
     background: $dark-m-purple-light !important;
 
     h3,
@@ -4970,10 +5322,33 @@ footer {
     }
   }
 
+  .StatisticDropdown {
+    select {
+      option {
+        background: #1e1e30;
+        color: $gray;
+      }
+    }
+  }
+
   .TableLoader {
     svg {
       rect {
         fill: #1e1e30 !important;
+      }
+    }
+  }
+
+  .Resources {
+    .heading {
+      color: $gray;
+    }
+
+    .resources {
+      .resource {
+        .title {
+          color: $gray;
+        }
       }
     }
   }

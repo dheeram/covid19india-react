@@ -13,11 +13,11 @@ function DistrictRow({
   districtName,
   data,
   tableStatistics,
-  isPerMillion,
   regionHighlighted,
   setRegionHighlighted,
   expandTable,
-  lastUpdatedTT,
+  getTableStatistic,
+  noDistrictData,
 }) {
   const {t} = useTranslation();
 
@@ -42,7 +42,7 @@ function DistrictRow({
       <div className="cell">
         <div className="state-name">{t(districtName)}</div>
         {data?.meta?.notes && (
-          <Tooltip {...{data: data.meta.notes}}>
+          <Tooltip message={data.meta.notes}>
             <InfoIcon size={16} />
           </Tooltip>
         )}
@@ -51,7 +51,12 @@ function DistrictRow({
       {tableStatistics.map((statistic) => (
         <Cell
           key={statistic}
-          {...{statistic, data, isPerMillion, lastUpdatedTT}}
+          {...{
+            statistic,
+            data,
+            getTableStatistic,
+            noDistrictData,
+          }}
         />
       ))}
     </div>
@@ -67,8 +72,6 @@ const isDistrictRowEqual = (prevProps, currProps) => {
     !equal(prevProps.data?.['last_updated'], currProps.data?.['last_updated'])
   ) {
     return false;
-  } else if (!equal(prevProps.isPerMillion, currProps.isPerMillion)) {
-    return false;
   } else if (
     !equal(
       prevProps.regionHighlighted.districtName,
@@ -79,6 +82,10 @@ const isDistrictRowEqual = (prevProps, currProps) => {
   ) {
     return false;
   } else if (!equal(prevProps.expandTable, currProps.expandTable)) {
+    return false;
+  } else if (!equal(prevProps.noDistrictData, currProps.noDistrictData)) {
+    return false;
+  } else if (!equal(prevProps.getTableStatistic, currProps.getTableStatistic)) {
     return false;
   } else if (!equal(prevProps.tableStatistics, currProps.tableStatistics)) {
     return false;
